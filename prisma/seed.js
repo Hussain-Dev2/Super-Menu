@@ -98,6 +98,23 @@ async function main() {
     }
   }
 
+  await prisma.settings.upsert({
+    where: { id: "global" },
+    update: {
+      openTime: "14:30",
+      closeTime: "01:30",
+      openDays: "1,2,3,4,5,6,0",
+      isOpen: true
+    },
+    create: {
+      id: "global",
+      openTime: "14:30",
+      closeTime: "01:30",
+      openDays: "1,2,3,4,5,6,0",
+      isOpen: true
+    }
+  });
+
   console.log('Seeding completed.');
 }
 

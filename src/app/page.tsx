@@ -18,11 +18,16 @@ export default async function Home() {
     prisma.settings.findUnique({ where: { id: "global" } })
   ]);
 
-  const isOpen = settings?.isOpen ?? true;
+  const settingsData = {
+    isOpen: settings?.isOpen ?? true,
+    openDays: settings?.openDays || "1,2,3,4,5,6,0",
+    openTime: settings?.openTime || "14:30",
+    closeTime: settings?.closeTime || "01:30"
+  };
 
   return (
     <main className="min-h-screen pb-32 selection:bg-brand-red selection:text-white bg-[#050505] overflow-x-hidden">
-      <MenuClient categories={categories} isOpen={isOpen} />
+      <MenuClient categories={categories} settings={settingsData} />
     </main>
   );
 }

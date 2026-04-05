@@ -19,6 +19,17 @@ export default async function AdminPage() {
   
   const isOpen = settings?.isOpen ?? true;
   const lastOpenedAt = settings?.lastOpenedAt?.toISOString() || new Date(0).toISOString();
+  const settingsData = {
+    openDays: settings?.openDays || "1,2,3,4,5,6,0",
+    openTime: settings?.openTime || "14:30",
+    closeTime: settings?.closeTime || "01:30"
+  };
 
-  return <AdminDashboard initialCategories={categories} initialOrders={orders} isOpenInitial={isOpen} lastOpenedAt={lastOpenedAt} />;
+  return <AdminDashboard 
+    initialCategories={categories} 
+    initialOrders={orders} 
+    isOpenInitial={isOpen} 
+    lastOpenedAt={lastOpenedAt}
+    settings={settingsData}
+  />;
 }

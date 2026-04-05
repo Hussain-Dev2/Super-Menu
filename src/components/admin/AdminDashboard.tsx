@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { 
   createCategory, deleteCategory, updateCategory,
   createProduct, deleteProduct, updateProduct,
-  updateOrderStatus, toggleStoreStatus, uploadFile
+  updateOrderStatus, updateStoreStatus, uploadFile, updateStoreSettings
 } from "@/app/actions";
 
 // Professional SVG Icons
@@ -39,10 +39,16 @@ const Icons = {
     <svg className={className || "w-4 h-4"} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
     </svg>
+  ),
+  Settings: () => (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
   )
 };
 
-export default function AdminDashboard({ initialCategories, initialOrders, isOpenInitial, lastOpenedAt }: any) {
+export default function AdminDashboard({ initialCategories, initialOrders, isOpenInitial, lastOpenedAt, settings }: any) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(isOpenInitial);
   const [password, setPassword] = useState("admin123");
@@ -50,6 +56,23 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
   const [activeTab, setActiveTab] = useState("orders");
   const [confirmModal, setConfirmModal] = useState<{show: boolean, type: 'category' | 'product', id: string} | null>(null);
   const [localLastOpenedAt, setLocalLastOpenedAt] = useState(lastOpenedAt);
+
+  // Formatting hours to 12h AM/PM
+  const format12h = (timeStr?: string) => {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(':');
+    let hours = parseInt(h);
+    const ampm = hours >= 12 ? 'مساءً' : 'صباحاً';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${m} ${ampm}`;
+  };
+
+  // Settings state
+  const [openDays, setOpenDays] = useState<string[]>(settings?.openDays?.split(',') || ['1','2','3','4','5','6','0']);
+  const [openTime, setOpenTime] = useState(settings?.openTime || '14:30');
+  const [closeTime, setCloseTime] = useState(settings?.closeTime || '01:30');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Category Logic
   const [newCatName, setNewCatName] = useState('');
@@ -105,14 +128,23 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
   }, [editingProdId]);
 
   const handleToggleStore = useCallback(async () => {
-    setIsOpen((prev: boolean) => !prev);
-    const nextState = !isOpen; // This is actually slightly risky with state lag if not careful, but okay here.
-    // Better:
-    // const nextState = !isOpen;
-    await toggleStoreStatus(!isOpen);
-    if (!isOpen) setLocalLastOpenedAt(new Date().toISOString());
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    await updateStoreStatus(nextState);
+    if (nextState) setLocalLastOpenedAt(new Date().toISOString());
     router.refresh();
   }, [isOpen, router]);
+
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    await updateStoreSettings({
+      openDays: openDays.join(','),
+      openTime,
+      closeTime
+    });
+    setIsSavingSettings(false);
+    router.refresh();
+  };
 
   const handleStatusUpdate = useCallback(async (id: string, status: string) => {
     await updateOrderStatus(id, status);
@@ -260,10 +292,52 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
           </div>
         </div>
 
-        {/* Tab Selection */}
-        <div className="flex gap-2 md:gap-4 mb-6 md:mb-12 flex-row-reverse">
-          <button onClick={() => setActiveTab("orders")} className={`flex-1 py-3.5 md:py-6 rounded-2xl md:rounded-[2.5rem] text-[10px] md:text-[11px] font-black tracking-widest uppercase transition-all duration-500 ${activeTab === "orders" ? 'bg-brand-red text-white shadow-3xl shadow-brand-red/20' : 'bg-white/5 text-gray-500 border border-white/5'}`}>الطلبات</button>
-          <button onClick={() => setActiveTab("menu")} className={`flex-1 py-3.5 md:py-6 rounded-2xl md:rounded-[2.5rem] text-[10px] md:text-[11px] font-black tracking-widest uppercase transition-all duration-500 ${activeTab === "menu" ? 'bg-brand-red text-white shadow-3xl shadow-brand-red/20' : 'bg-white/5 text-gray-500 border border-white/5'}`}>المنيو</button>
+        {/* Tab Selection - Optimized for laptop view */}
+        <div className="grid grid-cols-3 gap-3 md:gap-10 mb-12 md:mb-20">
+          <button 
+            onClick={() => setActiveTab("settings")} 
+            className={`py-3 md:py-6 px-4 md:px-12 rounded-[1.2rem] md:rounded-[3.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-5 border-2 ${
+              activeTab === "settings" 
+                ? 'bg-brand-orange text-white border-brand-orange shadow-[0_25px_60px_rgba(255,95,0,0.35)] scale-[1.03] z-20' 
+                : 'bg-white/5 text-brand-orange/60 border-brand-orange/20 hover:bg-brand-orange/5 hover:text-brand-orange group'
+            }`}
+          >
+            <div className={`${activeTab === "settings" ? 'animate-spin-slow' : 'group-hover:animate-spin-slow'}`}>
+              <Icons.Settings />
+            </div>
+            <div className="flex flex-col items-center md:items-start leading-none gap-1.5">
+              <span className="text-[10px] md:text-xs">الإعدادات</span>
+              <span className="text-[7px] md:text-[8px] opacity-60 uppercase font-extrabold tracking-tighter">SETTINGS</span>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab("menu")} 
+            className={`py-3 md:py-6 px-4 md:px-12 rounded-[1.2rem] md:rounded-[3.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-5 border-2 ${
+              activeTab === "menu" 
+                ? 'bg-brand-red text-white border-brand-red shadow-[0_25px_60px_rgba(255,59,59,0.35)] scale-[1.03] z-20' 
+                : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10'
+            }`}
+          >
+            <div className="flex flex-col items-center md:items-start leading-none gap-1.5">
+              <span className="text-[10px] md:text-xs">المنيو</span>
+              <span className="text-[7px] md:text-[8px] opacity-40 uppercase font-extrabold tracking-tighter text-right">MENU</span>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab("orders")} 
+            className={`py-3 md:py-6 px-4 md:px-12 rounded-[1.2rem] md:rounded-[3.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-5 border-2 ${
+              activeTab === "orders" 
+                ? 'bg-brand-red text-white border-brand-red shadow-[0_25px_60px_rgba(255,59,59,0.35)] scale-[1.03] z-20' 
+                : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10'
+            }`}
+          >
+            <div className="flex flex-col items-center md:items-start leading-none gap-1.5">
+              <span className="text-[10px] md:text-xs">الطلبات</span>
+              <span className="text-[7px] md:text-[8px] opacity-40 uppercase font-extrabold tracking-tighter text-right">ORDERS</span>
+            </div>
+          </button>
         </div>
 
         {activeTab === "orders" && (
@@ -532,6 +606,89 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="max-w-4xl mx-auto animate-fade-in text-right">
+             <div className="glass bg-white/[0.01] p-6 md:p-12 rounded-[3.5rem] border border-white/5">
+                <h2 className="text-2xl md:text-4xl font-black mb-12 italic tracking-tighter uppercase leading-none">إعدادات المتجر</h2>
+                
+                <div className="space-y-12">
+                   {/* Days Selection */}
+                   <div className="space-y-6">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">أيام العمل في الأسبوع</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                         {[
+                           {id: '1', name: 'الإثنين'},
+                           {id: '2', name: 'الثلاثاء'},
+                           {id: '3', name: 'الأربعاء'},
+                           {id: '4', name: 'الخميس'},
+                           {id: '5', name: 'الجمعة'},
+                           {id: '6', name: 'السبت'},
+                           {id: '0', name: 'الأحد'}
+                         ].map((day) => (
+                           <div 
+                             key={day.id}
+                             onClick={() => {
+                               if (openDays.includes(day.id)) {
+                                 setOpenDays(openDays.filter(d => d !== day.id));
+                               } else {
+                                 setOpenDays([...openDays, day.id]);
+                               }
+                             }}
+                             className={`p-4 rounded-2xl border cursor-pointer transition-all text-center font-black text-xs ${
+                               openDays.includes(day.id) 
+                               ? 'bg-brand-red border-brand-red text-white shadow-xl shadow-brand-red/20' 
+                               : 'bg-white/5 border-white/5 text-gray-500 hover:bg-white/10'
+                             }`}
+                           >
+                             {day.name}
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+
+                   {/* Hours Selection */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">وقت الافتتاح</label>
+                        <div className="relative">
+                          <input 
+                            type="time" 
+                            value={openTime} 
+                            onChange={e => setOpenTime(e.target.value)}
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-xl font-black focus:border-brand-red/40 outline-none text-right [color-scheme:dark]"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">وقت الإغلاق</label>
+                        <div className="relative">
+                          <input 
+                            type="time" 
+                            value={closeTime} 
+                            onChange={e => setCloseTime(e.target.value)}
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-xl font-black focus:border-brand-red/40 outline-none text-right [color-scheme:dark]"
+                          />
+                        </div>
+                      </div>
+                   </div>
+
+                   <div className="pt-10">
+                    <button 
+                      onClick={handleSaveSettings}
+                      disabled={isSavingSettings}
+                      className="group relative w-full py-6 bg-white text-black rounded-[2rem] font-black text-lg hover:bg-brand-red hover:text-white transition-all duration-500 overflow-hidden shadow-2xl active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-red to-brand-orange opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <span className="relative z-10 uppercase tracking-[0.2em] italic">
+                        {isSavingSettings ? 'جاري الحفظ...' : 'حفظ الإعدادات الجديدة'}
+                      </span>
+                    </button>
+                   </div>
+                </div>
+             </div>
           </div>
         )}
       </div>

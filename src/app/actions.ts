@@ -105,7 +105,7 @@ export async function updateOrderStatus(id: string, status: string) {
   } catch (e: any) { return { success: false, message: e.message }; }
 }
 
-export async function toggleStoreStatus(isOpen: boolean) {
+export async function updateStoreStatus(isOpen: boolean) {
   try {
     const data: any = { isOpen };
     if (isOpen) {
@@ -124,6 +124,23 @@ export async function toggleStoreStatus(isOpen: boolean) {
   } catch (e: any) { 
     console.error("Toggle store error:", e);
     return { success: false }; 
+  }
+}
+
+export async function updateStoreSettings(data: { openDays: string; openTime: string; closeTime: string }) {
+  try {
+    await prisma.settings.upsert({
+      where: { id: "global" },
+      update: data,
+      create: { id: "global", ...data, isOpen: true }
+    });
+    revalidatePath("/", "page");
+    revalidatePath("/", "layout");
+    revalidatePath("/admin", "page");
+    return { success: true };
+  } catch (e: any) {
+    console.error("Update settings error:", e);
+    return { success: false };
   }
 }
 

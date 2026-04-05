@@ -43,4 +43,7 @@ model Settings {
   id           String   @id @default("global")
   isOpen       Boolean  @default(true)
   lastOpenedAt DateTime @default(now())
+  openDays     String   @default("1,2,3,4,5,6,0") // 0=Sunday, 1=Monday, etc.
+  openTime     String   @default("14:30")
+  closeTime    String   @default("01:30")
 }

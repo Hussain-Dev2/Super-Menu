@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { getStoreStatus } from "@/app/actions";
+import { updateStoreStatus } from "@/app/actions";
 
 const CheckoutModal = dynamic(() => import("./CheckoutModal"), {
   ssr: false,
@@ -33,18 +33,63 @@ type CartItem = {
   selectedPrice?: number;
 };
 
-export default function MenuClient({ categories, isOpen }: { categories: Category[], isOpen: boolean }) {
+export default function MenuClient({ categories, settings }: { categories: Category[], settings: any }) {
   const [activeCategoryId, setActiveCategoryId] = useState("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [localIsOpen, setLocalIsOpen] = useState(isOpen);
+  const [localIsOpen, setLocalIsOpen] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState<Record<string, { name: string; price: number }>>({});
 
+  // Formatting hours to 12h AM/PM
+  const format12h = (timeStr?: string) => {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(':');
+    let hours = parseInt(h);
+    const ampm = hours >= 12 ? 'مساءً' : 'صباحاً';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${m} ${ampm}`;
+  };
+
+  // Calculate if store is effectively open
+  const checkIfOpen = useCallback(() => {
+    if (!settings || !settings.isOpen) return false;
+
+    const now = new Date();
+    const day = now.getDay().toString();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const openTimeStr = settings.openTime || "14:30";
+    const closeTimeStr = settings.closeTime || "01:30";
+    const openDaysStr = settings.openDays || "1,2,3,4,5,6,0";
+
+    const [openH, openM] = openTimeStr.split(':').map(Number);
+    const [closeH, closeM] = closeTimeStr.split(':').map(Number);
+
+    const openMin = openH * 60 + openM;
+    const closeMin = closeH * 60 + closeM;
+    const openDaysList = openDaysStr.split(',');
+
+    if (closeMin < openMin) {
+      if (currentTime < closeMin) {
+        const yesterday = ((now.getDay() + 6) % 7).toString();
+        return openDaysList.includes(yesterday);
+      }
+      return currentTime >= openMin && openDaysList.includes(day);
+    }
+    
+    return openDaysList.includes(day) && currentTime >= openMin && currentTime < closeMin;
+  }, [settings]);
+
   useEffect(() => {
-    setLocalIsOpen(isOpen);
-  }, [isOpen]);
+    setLocalIsOpen(checkIfOpen());
+    const interval = setInterval(() => {
+      setLocalIsOpen(checkIfOpen());
+    }, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, [checkIfOpen]);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -57,14 +102,8 @@ export default function MenuClient({ categories, isOpen }: { categories: Categor
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     
-    getStoreStatus().then(status => setLocalIsOpen(status));
-    const interval = setInterval(() => {
-      getStoreStatus().then(status => setLocalIsOpen(status));
-    }, 60000);
-
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      clearInterval(interval);
     };
   }, []);
 
@@ -186,15 +225,27 @@ export default function MenuClient({ categories, isOpen }: { categories: Categor
                استمتع بتجربة طعام استثنائية تجمع بين المذاق الشامي الأصيل وأجود المكونات، لتمنحك نكهة أسطورية لا تُنسى في كل لقمة.
             </p>
 
-            <div className="flex flex-col items-center gap-2 md:gap-4 animate-fade-in" style={{ animationDelay: '300ms' }}>
-               <div className="flex items-center gap-4 text-brand-orange scale-90 md:scale-110">
-                  <div className="w-2 h-2 rounded-full bg-brand-orange animate-ping"></div>
-                  <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] opacity-80">بغداد، بوب الشام • فخر النكهة الشامية</span>
+               <div className="mt-8 px-8 py-5 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex flex-col items-center gap-2 max-w-sm mx-auto shadow-2xl relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-brand-orange/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.5em] opacity-60">أوقات العمل المعتمدة</span>
+                  <div className="flex items-center gap-4 relative z-10">
+                     <div className="flex flex-col items-center">
+                        <span className="text-white font-black text-lg tracking-tighter italic whitespace-nowrap">
+                           {format12h(settings?.openTime || "14:30")} - {format12h(settings?.closeTime || "01:30")}
+                        </span>
+                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-1">OPEN HOURS</span>
+                     </div>
+                     <div className="w-[1px] h-10 bg-white/5"></div>
+                     <div className="flex flex-col items-center">
+                        <span className="text-brand-orange font-black text-xs uppercase tracking-widest">
+                           {(settings?.openDays?.split(',')?.length === 7) ? 'طوال أيام الأسبوع' : 'أيام عمل محددة'}
+                        </span>
+                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-1">SCHEDULE</span>
+                     </div>
+                  </div>
                </div>
-               <span className="text-gray-500 text-[10px] font-bold tracking-[0.2em] uppercase opacity-40">سوق بوب الجديد • ٧ أيام في الأسبوع</span>
             </div>
-         </div>
-      </header>
+         </header>
 
       <div className="max-w-7xl mx-auto px-8 relative z-20">
         {/* CATEGORY SELECTOR - Original Design with Anti-Glitch Fixes */}
