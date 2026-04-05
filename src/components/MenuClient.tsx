@@ -240,7 +240,7 @@ export default function MenuClient({ categories, isOpen }: { categories: Categor
               removeFromCart={removeFromCart}
               parsePizzaSizes={parsePizzaSizes}
               selectedSize={selectedSizes[product.id]}
-              setSelectedSize={(size) => setSelectedSizes(prev => ({ ...prev, [product.id]: size }))}
+              setSelectedSize={(size: { name: string; price: number }) => setSelectedSizes(prev => ({ ...prev, [product.id]: size }))}
             />
           ))}
         </div>
