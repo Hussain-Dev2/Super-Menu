@@ -42,15 +42,16 @@ export default function MenuClient({ categories, settings }: { categories: Categ
   const [localIsOpen, setLocalIsOpen] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState<Record<string, { name: string; price: number }>>({});
 
-  // Formatting hours to 12h AM/PM
-  const format12h = (timeStr?: string) => {
-    if (!timeStr) return "";
-    const [h, m] = timeStr.split(':');
-    let hours = parseInt(h);
-    const ampm = hours >= 12 ? 'مساءً' : 'صباحاً';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    return `${hours}:${m} ${ampm}`;
+  const format12h = (time: string) => {
+    if (!time) return "";
+    try {
+       const [h, m] = time.split(':').map(Number);
+       const period = h >= 12 ? 'PM' : 'AM';
+       const hours = h % 12 || 12;
+       return `${hours}:${m.toString().padStart(2, '0')} ${period}`;
+    } catch {
+       return time;
+    }
   };
 
   // Calculate if store is effectively open
@@ -230,9 +231,7 @@ export default function MenuClient({ categories, settings }: { categories: Categ
                   <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.5em] opacity-60">أوقات العمل المعتمدة</span>
                   <div className="flex items-center gap-4 relative z-10">
                      <div className="flex flex-col items-center">
-                        <span className="text-white font-black text-lg tracking-tighter italic whitespace-nowrap">
-                           {format12h(settings?.openTime || "14:30")} - {format12h(settings?.closeTime || "01:30")}
-                        </span>
+                        <span className="text-white font-black text-xl tracking-tighter italic">{format12h(settings?.openTime || "14:30")} - {format12h(settings?.closeTime || "01:30")}</span>
                         <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-1">OPEN HOURS</span>
                      </div>
                      <div className="w-[1px] h-10 bg-white/5"></div>

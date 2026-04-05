@@ -57,22 +57,23 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
   const [confirmModal, setConfirmModal] = useState<{show: boolean, type: 'category' | 'product', id: string} | null>(null);
   const [localLastOpenedAt, setLocalLastOpenedAt] = useState(lastOpenedAt);
 
-  // Formatting hours to 12h AM/PM
-  const format12h = (timeStr?: string) => {
-    if (!timeStr) return "";
-    const [h, m] = timeStr.split(':');
-    let hours = parseInt(h);
-    const ampm = hours >= 12 ? 'مساءً' : 'صباحاً';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    return `${hours}:${m} ${ampm}`;
-  };
-
   // Settings state
   const [openDays, setOpenDays] = useState<string[]>(settings?.openDays?.split(',') || ['1','2','3','4','5','6','0']);
   const [openTime, setOpenTime] = useState(settings?.openTime || '14:30');
   const [closeTime, setCloseTime] = useState(settings?.closeTime || '01:30');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  const format12h = (time: string) => {
+    if (!time) return "";
+    try {
+       const [h, m] = time.split(':').map(Number);
+       const period = h >= 12 ? 'PM' : 'AM';
+       const hours = h % 12 || 12;
+       return `${hours}:${m.toString().padStart(2, '0')} ${period}`;
+    } catch {
+       return time;
+    }
+  };
 
   // Category Logic
   const [newCatName, setNewCatName] = useState('');
@@ -292,20 +293,20 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
           </div>
         </div>
 
-        {/* Tab Selection - Optimized for laptop view */}
-        <div className="grid grid-cols-3 gap-3 md:gap-10 mb-12 md:mb-20">
+        {/* Tab Selection */}
+        <div className="grid grid-cols-3 gap-2 md:flex md:gap-6 mb-8 md:mb-16">
           <button 
             onClick={() => setActiveTab("settings")} 
-            className={`py-3 md:py-6 px-4 md:px-12 rounded-[1.2rem] md:rounded-[3.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-5 border-2 ${
+            className={`flex-1 py-3 md:py-4 px-4 md:px-14 rounded-[1.2rem] md:rounded-[2.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex items-center justify-center gap-3 md:gap-5 border-2 ${
               activeTab === "settings" 
-                ? 'bg-brand-orange text-white border-brand-orange shadow-[0_25px_60px_rgba(255,95,0,0.35)] scale-[1.03] z-20' 
+                ? 'bg-brand-orange text-white border-brand-orange shadow-[0_20px_50px_rgba(255,95,0,0.3)] scale-[1.02] z-20' 
                 : 'bg-white/5 text-brand-orange/60 border-brand-orange/20 hover:bg-brand-orange/5 hover:text-brand-orange group'
             }`}
           >
             <div className={`${activeTab === "settings" ? 'animate-spin-slow' : 'group-hover:animate-spin-slow'}`}>
               <Icons.Settings />
             </div>
-            <div className="flex flex-col items-center md:items-start leading-none gap-1.5">
+            <div className="flex flex-col items-center md:items-start leading-none gap-1">
               <span className="text-[10px] md:text-xs">الإعدادات</span>
               <span className="text-[7px] md:text-[8px] opacity-60 uppercase font-extrabold tracking-tighter">SETTINGS</span>
             </div>
@@ -313,29 +314,29 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
 
           <button 
             onClick={() => setActiveTab("menu")} 
-            className={`py-3 md:py-6 px-4 md:px-12 rounded-[1.2rem] md:rounded-[3.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-5 border-2 ${
+            className={`flex-1 py-3 md:py-4 px-4 md:px-14 rounded-[1.2rem] md:rounded-[2.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex items-center justify-center gap-3 md:gap-5 border-2 ${
               activeTab === "menu" 
-                ? 'bg-brand-red text-white border-brand-red shadow-[0_25px_60px_rgba(255,59,59,0.35)] scale-[1.03] z-20' 
+                ? 'bg-brand-red text-white border-brand-red shadow-[0_20px_50px_rgba(255,59,59,0.3)] scale-[1.02] z-20' 
                 : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10'
             }`}
           >
-            <div className="flex flex-col items-center md:items-start leading-none gap-1.5">
+            <div className="flex flex-col items-center md:items-start leading-none gap-1">
               <span className="text-[10px] md:text-xs">المنيو</span>
-              <span className="text-[7px] md:text-[8px] opacity-40 uppercase font-extrabold tracking-tighter text-right">MENU</span>
+              <span className="text-[7px] md:text-[8px] opacity-40 uppercase font-extrabold tracking-tighter">MENU</span>
             </div>
           </button>
 
           <button 
             onClick={() => setActiveTab("orders")} 
-            className={`py-3 md:py-6 px-4 md:px-12 rounded-[1.2rem] md:rounded-[3.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-5 border-2 ${
+            className={`flex-1 py-3 md:py-4 px-4 md:px-14 rounded-[1.2rem] md:rounded-[2.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex items-center justify-center gap-3 md:gap-5 border-2 ${
               activeTab === "orders" 
-                ? 'bg-brand-red text-white border-brand-red shadow-[0_25px_60px_rgba(255,59,59,0.35)] scale-[1.03] z-20' 
+                ? 'bg-brand-red text-white border-brand-red shadow-[0_20px_50px_rgba(255,59,59,0.3)] scale-[1.02] z-20' 
                 : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10'
             }`}
           >
-            <div className="flex flex-col items-center md:items-start leading-none gap-1.5">
+            <div className="flex flex-col items-center md:items-start leading-none gap-1">
               <span className="text-[10px] md:text-xs">الطلبات</span>
-              <span className="text-[7px] md:text-[8px] opacity-40 uppercase font-extrabold tracking-tighter text-right">ORDERS</span>
+              <span className="text-[7px] md:text-[8px] opacity-40 uppercase font-extrabold tracking-tighter">ORDERS</span>
             </div>
           </button>
         </div>
@@ -611,22 +612,36 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
 
         {activeTab === "settings" && (
           <div className="max-w-4xl mx-auto animate-fade-in text-right">
-             <div className="glass bg-white/[0.01] p-6 md:p-12 rounded-[3.5rem] border border-white/5">
-                <h2 className="text-2xl md:text-4xl font-black mb-12 italic tracking-tighter uppercase leading-none">إعدادات المتجر</h2>
+             <div className="glass bg-white/[0.01] p-8 md:p-16 rounded-[4rem] border-2 border-white/5 relative overflow-hidden group/card shadow-2xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-red/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover/card:bg-brand-red/10 transition-colors duration-1000"></div>
                 
-                <div className="space-y-12">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-white/5 pb-10">
+                   <div>
+                      <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none mb-3 animate-gradient-x bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white">إعدادات المتجر</h2>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] opacity-40">Store Management & Operational Hours</p>
+                   </div>
+                   <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-[2.5rem] border border-white/5 shadow-inner">
+                      <div className={`w-3 h-3 rounded-full ${isOpen ? 'bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-brand-red shadow-[0_0_15px_rgba(239,68,68,0.5)]'}`}></div>
+                      <span className="text-xs font-black text-white/60 uppercase tracking-widest">{isOpen ? 'المتجر مفتوح الآن' : 'المتجر مغلق حالياً'}</span>
+                   </div>
+                </div>
+                
+                <div className="space-y-16">
                    {/* Days Selection */}
-                   <div className="space-y-6">
-                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">أيام العمل في الأسبوع</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                   <div className="space-y-8">
+                      <div className="flex items-center gap-4">
+                         <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.4em] leading-none">أيام العمل الأسبوعية</label>
+                         <div className="h-[1px] flex-1 bg-gradient-to-l from-white/10 to-transparent"></div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
                          {[
-                           {id: '1', name: 'الإثنين'},
-                           {id: '2', name: 'الثلاثاء'},
-                           {id: '3', name: 'الأربعاء'},
-                           {id: '4', name: 'الخميس'},
-                           {id: '5', name: 'الجمعة'},
-                           {id: '6', name: 'السبت'},
-                           {id: '0', name: 'الأحد'}
+                           {id: '1', name: 'الاثنـين', en: 'MON'},
+                           {id: '2', name: 'الثـلاثاء', en: 'TUE'},
+                           {id: '3', name: 'الأربـعاء', en: 'WED'},
+                           {id: '4', name: 'الخـميس', en: 'THU'},
+                           {id: '5', name: 'الجـمعة', en: 'FRI'},
+                           {id: '6', name: 'السـبت', en: 'SAT'},
+                           {id: '0', name: 'الأحـد', en: 'SUN'}
                          ].map((day) => (
                            <div 
                              key={day.id}
@@ -637,55 +652,85 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                                  setOpenDays([...openDays, day.id]);
                                }
                              }}
-                             className={`p-4 rounded-2xl border cursor-pointer transition-all text-center font-black text-xs ${
+                             className={`relative group p-6 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-700 text-center flex flex-col items-center gap-1 overflow-hidden active:scale-95 shadow-xl ${
                                openDays.includes(day.id) 
-                               ? 'bg-brand-red border-brand-red text-white shadow-xl shadow-brand-red/20' 
-                               : 'bg-white/5 border-white/5 text-gray-500 hover:bg-white/10'
+                               ? 'bg-gradient-to-br from-brand-red to-brand-orange border-transparent text-white scale-[1.05] z-10' 
+                               : 'bg-white/[0.02] border-white/5 text-gray-500 hover:bg-white/[0.05] hover:border-white/10'
                              }`}
                            >
-                             {day.name}
+                              <span className={`text-sm md:text-base font-black whitespace-nowrap transition-colors ${openDays.includes(day.id) ? 'text-white' : 'group-hover:text-white'}`}>{day.name}</span>
+                              <span className={`text-[8px] md:text-[9px] font-black tracking-[0.2em] uppercase opacity-40 transition-colors ${openDays.includes(day.id) ? 'text-white/60' : 'group-hover:text-brand-orange'}`}>{day.en}</span>
+                              <div className={`absolute bottom-2 w-1 h-1 rounded-full transition-all duration-700 ${openDays.includes(day.id) ? 'bg-white scale-100 opacity-100' : 'bg-white/10 scale-0 opacity-0'}`}></div>
                            </div>
                          ))}
                       </div>
                    </div>
 
                    {/* Hours Selection */}
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">وقت الافتتاح</label>
-                        <div className="relative">
-                          <input 
-                            type="time" 
-                            value={openTime} 
-                            onChange={e => setOpenTime(e.target.value)}
-                            className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-xl font-black focus:border-brand-red/40 outline-none text-right [color-scheme:dark]"
-                          />
-                        </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      <div className="space-y-6 group/time">
+                         <div className="flex justify-between items-end px-6">
+                            <div className="flex items-center gap-3">
+                               <div className="w-2.5 h-2.5 rounded-full bg-brand-orange shadow-lg shadow-brand-orange/40 group-hover/time:scale-125 transition-transform"></div>
+                               <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em] leading-none">وقت الافتتاح</label>
+                            </div>
+                            <span className="text-[11px] font-black text-brand-orange uppercase italic tracking-[0.15em] animate-pulse">{format12h(openTime)}</span>
+                         </div>
+                         <div className="relative">
+                            <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-20 group-hover/time:opacity-60 transition-all duration-500 group-hover/time:scale-110">
+                               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <input 
+                              type="time" 
+                              value={openTime} 
+                              onChange={e => setOpenTime(e.target.value)}
+                              className="w-full bg-white/[0.02] border-2 border-white/5 rounded-[2.5rem] px-10 py-7 text-3xl font-black focus:border-brand-orange/40 focus:bg-white/[0.05] outline-none text-right [color-scheme:dark] transition-all duration-500 shadow-inner group-hover/time:border-white/10"
+                            />
+                         </div>
                       </div>
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">وقت الإغلاق</label>
-                        <div className="relative">
-                          <input 
-                            type="time" 
-                            value={closeTime} 
-                            onChange={e => setCloseTime(e.target.value)}
-                            className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-xl font-black focus:border-brand-red/40 outline-none text-right [color-scheme:dark]"
-                          />
-                        </div>
+                      <div className="space-y-6 group/time">
+                         <div className="flex justify-between items-end px-6">
+                            <div className="flex items-center gap-3">
+                               <div className="w-2.5 h-2.5 rounded-full bg-brand-red shadow-lg shadow-brand-red/40 group-hover/time:scale-125 transition-transform animate-pulse"></div>
+                               <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em] leading-none">وقت الإغلاق</label>
+                            </div>
+                            <span className="text-[11px] font-black text-brand-red uppercase italic tracking-[0.15em] animate-pulse">{format12h(closeTime)}</span>
+                         </div>
+                         <div className="relative">
+                            <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-20 group-hover/time:opacity-60 transition-all duration-500 group-hover/time:scale-110">
+                               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <input 
+                              type="time" 
+                              value={closeTime} 
+                              onChange={e => setCloseTime(e.target.value)}
+                              className="w-full bg-white/[0.02] border-2 border-white/5 rounded-[2.5rem] px-10 py-7 text-3xl font-black focus:border-brand-red/40 focus:bg-white/[0.05] outline-none text-right [color-scheme:dark] transition-all duration-500 shadow-inner group-hover/time:border-white/10"
+                            />
+                         </div>
                       </div>
                    </div>
 
-                   <div className="pt-10">
-                    <button 
-                      onClick={handleSaveSettings}
-                      disabled={isSavingSettings}
-                      className="group relative w-full py-6 bg-white text-black rounded-[2rem] font-black text-lg hover:bg-brand-red hover:text-white transition-all duration-500 overflow-hidden shadow-2xl active:scale-[0.98] disabled:opacity-50"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-brand-red to-brand-orange opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <span className="relative z-10 uppercase tracking-[0.2em] italic">
-                        {isSavingSettings ? 'جاري الحفظ...' : 'حفظ الإعدادات الجديدة'}
-                      </span>
-                    </button>
+                   <div className="pt-12">
+                     <button 
+                       onClick={handleSaveSettings}
+                       disabled={isSavingSettings}
+                       className="group relative w-full py-8 bg-white text-black rounded-[2.5rem] font-black text-xl hover:text-white transition-all duration-700 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] active:scale-[0.98] disabled:opacity-50"
+                     >
+                       <div className="absolute inset-0 bg-gradient-to-r from-brand-red via-brand-orange to-brand-red bg-[length:200%_auto] opacity-0 group-hover:opacity-100 transition-all duration-700 animate-gradient-x"></div>
+                       <span className="relative z-10 uppercase tracking-[0.4em] italic flex items-center justify-center gap-4">
+                         {isSavingSettings ? (
+                            <>
+                               <div className="w-5 h-5 border-4 border-black/20 border-t-black animate-spin rounded-full"></div>
+                               <span>جاري الحفظ</span>
+                            </>
+                         ) : (
+                            <>
+                               <Icons.Check />
+                               <span>حفظ الإعدادات الفاخرة</span>
+                            </>
+                         )}
+                       </span>
+                     </button>
                    </div>
                 </div>
              </div>
@@ -724,7 +769,14 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                      <span className="text-[10px] font-black text-brand-red uppercase tracking-[0.5em] block">موقعنا</span>
                      <div className="space-y-2">
                         <span className="block text-white font-black text-2xl md:text-4xl italic tracking-tight">بغداد، بوب الشام</span>
-                        <span className="block text-gray-500 text-xs md:text-sm font-bold leading-none tracking-widest uppercase opacity-60">سوق بوب الجديد • ٧ أيام في الأسبوع</span>
+                        <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 mt-2">
+                           <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/5 text-gray-400 text-[10px] md:text-xs font-black tracking-widest uppercase">
+                              {format12h(settings?.openTime || "14:30")} - {format12h(settings?.closeTime || "01:30")}
+                           </span>
+                           <span className="px-4 py-1.5 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-[10px] md:text-xs font-black tracking-widest uppercase">
+                              {(settings?.openDays?.split(',')?.length === 7) ? 'طوال أيام الأسبوع' : 'أيام العمل المحددة'}
+                           </span>
+                        </div>
                      </div>
                      <div className="flex items-center justify-center md:justify-start gap-4 text-brand-orange scale-110 md:scale-100 origin-right">
                         <div className="w-2 h-2 rounded-full bg-brand-orange animate-ping"></div>
