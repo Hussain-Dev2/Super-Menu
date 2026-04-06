@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { submitOrder } from "@/app/actions";
 
-export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: any) {
+const CheckoutModal = memo(({ cart, totalPrice, onClose, onSuccess }: any) => {
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,13 +45,13 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
         return `📦 ${c.quantity}x ${itemName} (${(itemPrice * c.quantity).toLocaleString()} د.ع)`;
       }).join('\n');
       
-      const message = `*طلب جديد من تطبيق Tabasco Al-Sham* 🍔🍕\n\n` +
+      const message = `*طلب جديد من تطبيق Shawarma Nazo Land* 🌯🔥\n\n` +
         `*التفاصيل:*\n${itemsList}\n\n` +
         `*المجموع النهائي:* ${totalPrice.toLocaleString()} دينار عراقي\n\n` +
         `*معلومات التوصيل:*\n` +
         `📱 الهاتف: ${phone}\n` +
         `📍 العنوان: ${location}\n\n` +
-        `_شكراً لطلبكم من تاباسكو الشام!_`;
+        `_شكراً لطلبكم من شاورما نازولاند!_`;
 
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
@@ -75,7 +75,7 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
       <div className="glass bg-brand-dark/95 w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative z-10 border border-white/10 flex flex-col max-h-[90vh] overflow-hidden transform transition-all duration-500">
         
         {/* Glow Decor */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-brand-red to-transparent opacity-50"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-brand-green to-transparent opacity-50"></div>
 
         {/* Modal Header */}
         <div className="p-6 md:p-8 pb-4 flex justify-between items-center">
@@ -96,17 +96,17 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
         {/* Modal Content */}
         <div className="p-6 md:p-8 pt-2 overflow-y-auto custom-scrollbar">
           {error && (
-            <div className="bg-brand-red/10 text-brand-red p-4 rounded-[1.5rem] text-xs font-bold mb-6 border border-brand-red/20 animate-pulse">
+            <div className="bg-red-500/10 text-red-500 p-4 rounded-[1.5rem] text-xs font-bold mb-6 border border-red-500/20 animate-pulse">
               ⚠️ {error}
             </div>
           )}
 
           {/* Order Summary Card */}
           <div className="bg-white/[0.03] rounded-[2rem] p-5 mb-8 border border-white/5 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-16 h-16 bg-brand-orange/5 blur-2xl rounded-full"></div>
+             <div className="absolute top-0 right-0 w-16 h-16 bg-brand-yellow/5 blur-2xl rounded-full"></div>
              <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-bold text-gray-500 uppercase">المبلغ الإجمالي</span>
-                <span className="text-[10px] font-black text-brand-orange bg-brand-orange/10 px-2 py-0.5 rounded-lg">قيد الدفع</span>
+                <span className="text-[10px] font-black text-brand-yellow bg-brand-yellow/10 px-2 py-0.5 rounded-lg">قيد الدفع</span>
              </div>
              <div className="text-3xl font-black text-white flex items-baseline gap-1 font-cairo">
                 {totalPrice.toLocaleString("ar-IQ")}
@@ -122,7 +122,7 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
             <div className="space-y-2">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-4">رقم الهاتف للهوية</label>
               <div className="relative group/input">
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-500 group-focus-within/input:text-brand-red transition-colors">
+                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-500 group-focus-within/input:text-brand-green transition-colors">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
@@ -133,7 +133,7 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="رقم الهاتف للتواصل..."
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-[1.5rem] pr-12 pl-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-brand-red/50 focus:bg-white/[0.05] transition-all font-bold text-base md:text-sm"
+                  className="w-full bg-white/[0.03] border border-white/5 rounded-[1.5rem] pr-12 pl-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-brand-green/50 focus:bg-white/[0.05] transition-all font-bold text-base md:text-sm"
                 />
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
             <div className="space-y-2">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-4">عنوان التوصيل بدقة</label>
               <div className="relative group/input">
-                 <div className="absolute top-4 right-4 text-gray-500 group-focus-within/input:text-brand-red transition-colors">
+                 <div className="absolute top-4 right-4 text-gray-500 group-focus-within/input:text-brand-green transition-colors">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -153,7 +153,7 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="المنطقة، أقرب نقطة دالة، رقم الزقاق..."
                   rows={3}
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-[1.5rem] pr-12 pl-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-brand-red/50 focus:bg-white/[0.05] transition-all font-bold text-base md:text-sm resize-none"
+                  className="w-full bg-white/[0.03] border border-white/5 rounded-[1.5rem] pr-12 pl-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-brand-green/50 focus:bg-white/[0.05] transition-all font-bold text-base md:text-sm resize-none"
                 />
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
               type="submit"
               disabled={isSubmitting}
               className={`group relative w-full py-5 rounded-[1.8rem] font-black text-lg transition-all active:scale-[0.98] overflow-hidden ${
-                isSubmitting ? "bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5" : "bg-brand-red text-white neon-red"
+                isSubmitting ? "bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5" : "bg-brand-green text-white neon-green"
               }`}
             >
               <span className="relative z-10 flex items-center justify-center gap-3">
@@ -180,11 +180,13 @@ export default function CheckoutModal({ cart, totalPrice, onClose, onSuccess }: 
           </form>
 
           <p className="text-center text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-8">
-            Tabasco Al-Sham • Premium Food Delivery
+            Shawarma Nazo Land • Premium Food Experience
           </p>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default CheckoutModal;
 

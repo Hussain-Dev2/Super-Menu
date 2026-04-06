@@ -110,6 +110,10 @@ export default function MenuClient({ categories, settings }: { categories: Categ
 
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => {
+      // Special section always first
+      if (a.name === "الجديد والقسم الخاص") return -1;
+      if (b.name === "الجديد والقسم الخاص") return 1;
+      // Traditional sections follow
       if (a.name === "الوجبات") return -1;
       if (b.name === "الوجبات") return 1;
       return 0;
@@ -127,6 +131,10 @@ export default function MenuClient({ categories, settings }: { categories: Categ
     if (activeCategoryId === "all") return "الكل";
     return sortedCategories.find(c => c.id === activeCategoryId)?.name || "";
   }, [activeCategoryId, sortedCategories]);
+
+  const specialCategoryId = useMemo(() => {
+    return categories.find(c => c.name === "الجديد والقسم الخاص")?.id;
+  }, [categories]);
 
   const parsePizzaSizes = (desc: string | null) => {
     if (!desc?.includes("SIZES:")) return null;
@@ -191,25 +199,28 @@ export default function MenuClient({ categories, settings }: { categories: Categ
     <div className="min-h-screen bg-[#050505] relative isolate font-cairo overflow-x-hidden text-right" dir="rtl">
       {/* MAGICAL BACKGROUND LAYER */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[60rem] h-[60rem] bg-brand-red/5 rounded-full blur-[150px] opacity-40 animate-pulse"></div>
-        <div className="absolute bottom-[0%] right-[-10%] w-[50rem] h-[50rem] bg-brand-orange/5 rounded-full blur-[130px] opacity-30 animate-pulse"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[60rem] h-[60rem] bg-brand-green/5 rounded-full blur-[150px] opacity-40 animate-pulse"></div>
+        <div className="absolute bottom-[0%] right-[-10%] w-[50rem] h-[50rem] bg-brand-yellow/5 rounded-full blur-[130px] opacity-30 animate-pulse"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')] opacity-[0.08] mix-blend-screen"></div>
       </div>
 
       <header className="relative pt-20 pb-16 px-8 text-center overflow-hidden">
          <div className="max-w-4xl mx-auto flex flex-col items-center">
-            <div className={`mb-8 px-6 py-2 rounded-full border flex items-center gap-3 transition-all duration-700 animate-fade-in ${localIsOpen ? 'bg-green-500/5 border-green-500/20 text-green-500' : 'bg-red-500/5 border-red-500/20 text-red-500'}`}>
-               <span className={`w-2 h-2 rounded-full animate-pulse ${localIsOpen ? 'bg-green-500' : 'bg-red-500'}`}></span>
-               <span className="text-[10px] font-black uppercase tracking-[0.3em]">
-                  {localIsOpen ? 'مفتوح الآن • نتشرف بخدمتكم' : 'مغلق حالياً • نراكم لاحقاً'}
+            <div className={`mb-8 px-5 py-2.5 rounded-full border flex items-center gap-3 transition-all duration-700 animate-fade-in ${localIsOpen ? 'bg-brand-green/10 border-brand-green/30 text-brand-green shadow-[0_0_20px_rgba(0,202,114,0.2)]' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+               <div className="relative">
+                  <span className={`w-2 h-2 rounded-full block ${localIsOpen ? 'bg-brand-green animate-pulse' : 'bg-red-500'}`}></span>
+                  {localIsOpen && <span className="absolute inset-0 w-2 h-2 rounded-full bg-brand-green animate-ping opacity-75"></span>}
+               </div>
+               <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] italic">
+                  {localIsOpen ? 'OPEN NOW • WELCOME' : 'CLOSED NOW • SEE YOU SOON'}
                </span>
             </div>
 
             <div className="relative group mb-10 transform hover:rotate-3 transition-transform duration-700">
-               <div className="absolute -inset-4 bg-gradient-to-r from-brand-red to-brand-orange rounded-[3rem] blur-2xl opacity-10 group-hover:opacity-30 transition"></div>
+               <div className="absolute -inset-4 bg-gradient-to-r from-brand-green to-brand-yellow rounded-[3rem] blur-2xl opacity-10 group-hover:opacity-30 transition"></div>
                <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-[3rem] overflow-hidden border border-white/10 shadow-3xl bg-black">
                   <Image 
-                    src="/55555555555_page-0001.jpg" 
+                    src="/land.png" 
                     alt="Logo" 
                     fill 
                     priority 
@@ -218,29 +229,56 @@ export default function MenuClient({ categories, settings }: { categories: Categ
                </div>
             </div>
 
-            <h1 className="text-4xl md:text-8xl font-black text-white mb-4 tracking-tighter leading-none italic">
-               TABASCO <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-red via-brand-orange to-brand-red animate-gradient-x">AL-SHAM</span>
+            <h1 className="text-4xl md:text-8xl font-black mb-4 tracking-tighter leading-none italic uppercase flex flex-col items-center">
+               <span className="text-brand-green drop-shadow-[0_0_15px_rgba(0,202,114,0.3)]">SHAWARMA</span>
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-yellow via-white to-brand-yellow animate-gradient-x scale-90 md:scale-75 -mt-2 md:-mt-4">NAZO LAND</span>
             </h1>
             
             <p className="max-w-2xl mx-auto text-gray-400 text-xs md:text-base font-bold leading-relaxed opacity-70 px-4 mb-8">
                استمتع بتجربة طعام استثنائية تجمع بين المذاق الشامي الأصيل وأجود المكونات، لتمنحك نكهة أسطورية لا تُنسى في كل لقمة.
             </p>
 
-               <div className="mt-8 px-8 py-5 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex flex-col items-center gap-2 max-w-sm mx-auto shadow-2xl relative group overflow-hidden">
-                  <div className="absolute inset-0 bg-brand-orange/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.5em] opacity-60">أوقات العمل المعتمدة</span>
-                  <div className="flex items-center gap-4 relative z-10">
+               <div className="mt-8 px-10 py-6 rounded-[3rem] bg-white/[0.04] border border-white/10 flex flex-col items-center gap-3 max-w-sm mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-green/10 to-brand-yellow/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  <div className="flex items-center gap-2 mb-1">
+                     <div className="w-1.5 h-1.5 rounded-full bg-brand-yellow animate-pulse"></div>
+                     <span className="text-gray-500 text-[9px] font-black uppercase tracking-[0.4em] opacity-80">أوقات العمل المعتمدة</span>
+                  </div>
+
+                  <div className="flex items-center gap-6 relative z-10">
                      <div className="flex flex-col items-center">
-                        <span className="text-white font-black text-xl tracking-tighter italic">{format12h(settings?.openTime || "14:30")} - {format12h(settings?.closeTime || "01:30")}</span>
-                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-1">OPEN HOURS</span>
+                        <div className="flex items-center gap-2 mb-0.5" dir="ltr">
+                           <span className="text-white font-black text-2xl tracking-tighter italic hover:text-brand-green transition-colors">
+                              {format12h(settings?.openTime || "14:30")}
+                           </span>
+                           <span className="text-gray-600 font-black">-</span>
+                           <span className="text-white font-black text-2xl tracking-tighter italic hover:text-brand-yellow transition-colors">
+                              {format12h(settings?.closeTime || "01:30")}
+                           </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                           <svg className="w-2.5 h-2.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                           <span className="text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em]">Daily Schedule</span>
+                        </div>
                      </div>
-                     <div className="w-[1px] h-10 bg-white/5"></div>
+                     
+                     <div className="w-[1px] h-12 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                     
                      <div className="flex flex-col items-center">
-                        <span className="text-brand-orange font-black text-xs uppercase tracking-widest">
-                           {(settings?.openDays?.split(',')?.length === 7) ? 'طوال أيام الأسبوع' : 'أيام عمل محددة'}
+                        <span className="text-brand-yellow font-black text-[13px] uppercase tracking-widest italic">
+                           {(settings?.openDays?.split(',')?.length === 7) ? 'طوال الأسبوع' : 'أيام محددة'}
                         </span>
-                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-1">SCHEDULE</span>
+                        <div className="flex items-center gap-1 mt-1">
+                           <svg className="w-2.5 h-2.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                           <span className="text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em]">Open Days</span>
+                        </div>
                      </div>
+                  </div>
+
+                  {/* Operational Status Indicator */}
+                  <div className={`mt-2 px-4 py-1 rounded-full border text-[8px] font-black tracking-[0.2em] uppercase ${localIsOpen ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                     {localIsOpen ? 'Live Now' : 'Store Closed'}
                   </div>
                </div>
             </div>
@@ -253,28 +291,40 @@ export default function MenuClient({ categories, settings }: { categories: Categ
             <div className="flex gap-4 overflow-x-auto scrollbar-hide px-2 pb-2">
                <button 
                 onClick={() => setActiveCategoryId("all")} 
-                className={`whitespace-nowrap px-10 py-4 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-500 active:scale-90 ${activeCategoryId === "all" ? 'bg-brand-red text-white shadow-[0_10px_30px_rgba(255,59,59,0.3)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}
+                className={`whitespace-nowrap px-10 py-4 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-500 active:scale-90 ${activeCategoryId === "all" ? 'bg-brand-green text-black shadow-[0_10px_30px_rgba(0,202,114,0.3)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}
                 dir="rtl"
                >
                   الكل
                </button>
-               {sortedCategories.map((cat) => (
-                  <button 
-                    key={cat.id} 
-                    onClick={() => setActiveCategoryId(cat.id)} 
-                    className={`whitespace-nowrap px-10 py-4 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-500 active:scale-90 ${activeCategoryId === cat.id ? 'bg-brand-red text-white shadow-[0_10px_30px_rgba(255,59,59,0.3)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}
-                    dir="rtl"
-                  >
-                    {cat.name}
-                  </button>
-               ))}
+               {sortedCategories.map((cat) => {
+                  const isSpecial = cat.name === "الجديد والقسم الخاص";
+                  return (
+                    <button 
+                      key={cat.id} 
+                      onClick={() => setActiveCategoryId(cat.id)} 
+                      className={`relative whitespace-nowrap px-10 py-4 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-500 active:scale-90 ${
+                        activeCategoryId === cat.id 
+                          ? isSpecial 
+                            ? 'bg-gradient-to-r from-brand-green via-brand-yellow to-brand-green text-black shadow-[0_15px_40px_rgba(0,202,114,0.4)] scale-110 border-none'
+                            : 'bg-brand-green text-black shadow-[0_10px_30px_rgba(0,202,114,0.3)]' 
+                          : isSpecial
+                            ? 'bg-brand-green/10 text-brand-green border border-brand-green/20 shadow-[0_5px_15px_rgba(0,202,114,0.1)]'
+                            : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'
+                      }`}
+                      dir="rtl"
+                    >
+                      {isSpecial && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-brand-green text-[7px] px-2 py-0.5 rounded-full font-black animate-bounce shadow-xl">NEW</span>}
+                      {cat.name}
+                    </button>
+                  );
+               })}
             </div>
           </div>
         </div>
 
         <div className="mt-16 md:mt-32 mb-10 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-6 md:pb-10">
            <div>
-              <span className="text-[9px] md:text-[10px] font-black text-brand-red uppercase tracking-[0.3em] mb-2 md:mb-4 block">قائمة الطعام</span>
+              <span className="text-[9px] md:text-[10px] font-black text-brand-green uppercase tracking-[0.3em] mb-2 md:mb-4 block">قائمة الطعام</span>
               <h2 className="text-3xl md:text-7xl font-black text-white italic tracking-tighter">{activeCategoryName}</h2>
            </div>
         </div>
@@ -285,6 +335,7 @@ export default function MenuClient({ categories, settings }: { categories: Categ
               key={product.id}
               product={product}
               idx={idx}
+              isSpecialCategory={product.categoryId === specialCategoryId}
               localIsOpen={localIsOpen}
               getQuantity={getQuantity}
               addToCart={addToCart}
@@ -306,17 +357,24 @@ export default function MenuClient({ categories, settings }: { categories: Categ
                <div className="space-y-10 flex flex-col items-center w-full">
                   <div className="flex flex-col items-center gap-4">
                      <div className="w-20 h-20 rounded-3xl overflow-hidden border border-white/10 mb-2 shadow-2xl skew-y-3 relative">
-                        <Image src="/55555555555_page-0001.jpg" alt="Logo" fill className="object-cover" />
+                        <Image src="/land.png" alt="Logo" fill className="object-cover" />
                      </div>
-                     <h3 className="text-4xl font-black text-white italic tracking-tighter leading-none italic animate-gradient-x bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white">TABASCO AL-SHAM</h3>
-                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] max-w-xs leading-relaxed text-center">نقدم لكم أفخر النكهات الشامية الأصيلة والوصفات الأسطورية منذ {new Date().getFullYear()}</p>
+                      <h3 className="text-4xl font-black italic tracking-tighter leading-none uppercase flex flex-col items-center gap-1">
+                         <span className="text-brand-green">SHAWARMA</span>
+                         <span className="text-brand-yellow text-2xl -mt-1">NAZO LAND</span>
+                      </h3>
+                      <div className="flex flex-col items-center gap-1">
+                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] max-w-xs leading-relaxed text-center italic">أفخر النكهات الشامية الأصيلة والوصفات الأسطورية</p>
+                         <p className="text-[12px] font-black text-brand-yellow mt-1 tracking-widest">الموصل - حي المزارع - مقابل مستشفى السلام</p>
+                         <p className="text-[11px] font-bold text-gray-400 mt-1" dir="ltr">07719933131 - 07752277507 - 07752277506</p>
+                      </div>
                   </div>
                   
                   <div className="flex gap-5">
-                     <a href="https://www.facebook.com/share/1CgeTMMTYZ/" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-red/40 hover:bg-brand-red/10 transition-all duration-700 group active:scale-90 shadow-lg">
+                     <a href="https://www.facebook.com/share/1CgeTMMTYZ/" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-green/40 hover:bg-brand-green/10 transition-all duration-700 group active:scale-90 shadow-lg">
                         <svg className="w-7 h-7 text-gray-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                      </a>
-                     <a href="https://www.instagram.com/tab_asco1?igsh=ZXprcTdqNms2dWlz" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-red/40 hover:bg-brand-red/10 transition-all duration-700 group active:scale-90 shadow-lg">
+                     <a href="https://www.instagram.com/tab_asco1?igsh=ZXprcTdqNms2dWlz" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-green/40 hover:bg-brand-green/10 transition-all duration-700 group active:scale-90 shadow-lg">
                         <svg className="w-7 h-7 text-gray-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.669-.072-4.948-.2-4.351-2.609-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                      </a>
                   </div>
@@ -326,14 +384,14 @@ export default function MenuClient({ categories, settings }: { categories: Categ
             {/* COPYRIGHT BAR */}
             <div className="mt-32 pt-10 border-t border-white/5 flex flex-col md:flex-row-reverse justify-between items-center gap-10">
                <div className="flex flex-col items-center md:items-end gap-2">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">© {new Date().getFullYear()} TABASCO AL-SHAM • ALL RIGHTS RESERVED</p>
+                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">© {new Date().getFullYear()} SHAWARMA NAZO LAND • ALL RIGHTS RESERVED</p>
                   <p className="text-[8px] font-bold text-gray-700 uppercase tracking-widest">Premium Restaurant Experience</p>
                </div>
                
                <a href="https://me.nexadigital.dev" target="_blank" rel="noopener noreferrer" className="group">
-                  <div className="flex items-center gap-5 bg-transparent px-8 py-3.5 rounded-[2rem] border border-white/5 hover:border-brand-red/30 hover:bg-white/[0.05] transition-all duration-700 shadow-2xl active:scale-95">
-                     <span className="text-[10px] font-black text-white/10 group-hover:text-brand-red/40 transition-colors uppercase tracking-[0.3em] font-cairo">Handcrafted by</span>
-                     <div className="h-4 w-[1px] bg-white/10 group-hover:bg-brand-red/20 transition-colors"></div>
+                  <div className="flex items-center gap-5 bg-transparent px-8 py-3.5 rounded-[2rem] border border-white/5 hover:border-brand-green/30 hover:bg-white/[0.05] transition-all duration-700 shadow-2xl active:scale-95">
+                     <span className="text-[10px] font-black text-white/10 group-hover:text-brand-green/40 transition-colors uppercase tracking-[0.3em] font-cairo">Handcrafted by</span>
+                     <div className="h-4 w-[1px] bg-white/10 group-hover:bg-brand-green/20 transition-colors"></div>
                      <span className="text-[11px] font-black text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/60 transition-all tracking-[0.15em]">NEXA DIGITAL</span>
                   </div>
                </a>
@@ -349,14 +407,14 @@ export default function MenuClient({ categories, settings }: { categories: Categ
                  onClick={() => setIsCartOpen(true)}
                  className="flex-shrink-0 glass bg-white/10 border border-white/20 rounded-2xl px-4 flex items-center justify-center gap-2 active:scale-90 transition-all"
                >
-                 <div className="bg-brand-orange/90 w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs text-white">{totalItems}</div>
+                 <div className="bg-brand-yellow/90 w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs text-white">{totalItems}</div>
                  <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                  </svg>
                </button>
                {/* Checkout button */}
                <button onClick={() => setIsCheckoutOpen(true)} className="relative flex-1 group">
-                  <div className="relative glass bg-brand-red text-white rounded-2xl py-3.5 px-5 flex items-center justify-between shadow-3xl active:scale-95 border border-white/20">
+                  <div className="relative glass bg-brand-green text-white rounded-2xl py-3.5 px-5 flex items-center justify-between shadow-3xl active:scale-95 border border-white/20">
                      <span className="text-base font-black">{totalPrice.toLocaleString("ar-IQ")} د.ع</span>
                      <span className="font-black text-sm italic uppercase">إتمام الطلب</span>
                   </div>
@@ -366,39 +424,39 @@ export default function MenuClient({ categories, settings }: { categories: Categ
       )}
 
       {/* Cart Drawer */}
-      {isCartOpen && (
+      {isCartOpen ? (
         <CartDrawer
           cart={cart}
           totalPrice={totalPrice}
           totalItems={totalItems}
           onClose={() => setIsCartOpen(false)}
           onCheckout={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
-          onAdd={(product: Product, size?: string, price?: number) => addToCart(product, size ? { name: size, price: price! } : undefined)}
-          onRemove={(productId: string, sizeName?: string) => removeFromCart(productId, sizeName)}
+          onAdd={addToCart}
+          onRemove={removeFromCart}
         />
-      )}
+      ) : null}
 
-      {isCheckoutOpen && (
+      {isCheckoutOpen ? (
         <CheckoutModal 
           cart={cart}
           totalPrice={totalPrice}
           onClose={() => setIsCheckoutOpen(false)} 
           onSuccess={() => { setCart([]); setIsCheckoutOpen(false); }}
         />
-      )}
+      ) : null}
 
       {/* FLOATING BOT/SERVICE ICON */}
       <div className="fixed bottom-32 left-6 z-[90] animate-bounce-slow">
         <a 
-          href="https://wa.me/9647727681903" 
+          href="https://wa.me/9647719933131" 
           target="_blank" 
           rel="noopener noreferrer"
           className="relative block group"
         >
-          <div className="absolute -inset-2 bg-brand-orange rounded-full blur opacity-20 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-          <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full glass border border-white/20 bg-brand-orange shadow-2xl overflow-hidden active:scale-90 transition-all">
+          <div className="absolute -inset-2 bg-brand-yellow rounded-full blur opacity-20 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+          <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full glass border border-white/20 bg-brand-yellow shadow-2xl overflow-hidden active:scale-90 transition-all">
             <Image 
-              src="/55555555555_page-0001.jpg" 
+              src="/land.png" 
               alt="Bot Service" 
               fill 
               className="object-cover hover:scale-125 transition-transform" 
@@ -416,6 +474,7 @@ export default function MenuClient({ categories, settings }: { categories: Categ
 const ProductCard = React.memo(({ 
   product, 
   idx, 
+  isSpecialCategory,
   localIsOpen, 
   getQuantity, 
   addToCart, 
@@ -438,12 +497,37 @@ const ProductCard = React.memo(({
         containIntrinsicSize: '400px'
       }}
     >
-       <div className={`glass bg-white/[0.01] rounded-[1.5rem] md:rounded-[4rem] p-3 md:p-8 border border-white/5 hover:border-brand-red/40 hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden flex flex-col h-full ${(!localIsOpen || product.isAvailable === false) && 'grayscale opacity-60 pointer-events-none'}`}>
+       <div className={`glass bg-white/[0.01] rounded-[1.5rem] md:rounded-[4rem] p-3 md:p-8 border transition-all duration-700 relative overflow-hidden flex flex-col h-full 
+          ${(!localIsOpen || product.isAvailable === false) && 'grayscale opacity-60 pointer-events-none'} 
+          ${isSpecialCategory 
+            ? 'border-brand-green/60 bg-gradient-to-br from-brand-green/[0.08] via-transparent to-brand-yellow/[0.05] shadow-[0_0_50px_rgba(0,202,114,0.15)] ring-1 ring-brand-green/20' 
+            : 'border-white/10 hover:border-brand-green/40 hover:bg-white/[0.04]'
+          }`}
+       >
+          {/* Shimmer Effect for Special Items */}
+          {isSpecialCategory && (
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent -translate-x-[100%] animate-shimmer pointer-events-none"></div>
+          )}
+          
+          {isSpecialCategory && (
+            <div className="absolute top-6 right-6 z-50 flex flex-col items-end gap-2 scale-110">
+               <div className="bg-gradient-to-r from-brand-green via-brand-yellow to-brand-green text-black text-[9px] md:text-[11px] font-black px-5 py-2 rounded-full shadow-[0_10px_30px_rgba(0,202,114,0.4)] flex items-center gap-2 border border-white/20 animate-pulse-slow">
+                  <span className="text-sm">🔥</span>
+                  قسم العروض الجديدة
+               </div>
+            </div>
+          )}
+
           {product.isAvailable === false && (
              <div className="absolute top-4 left-[-35px] bg-red-600 text-white text-[8px] md:text-[10px] font-black px-10 py-1 rotate-[-45deg] z-50 shadow-xl uppercase tracking-tighter">نفدت الكمية</div>
           )}
           
-          <div className="w-full h-40 md:h-72 mb-4 md:mb-10 rounded-[1.2rem] md:rounded-[3rem] overflow-hidden relative shadow-3xl bg-[#0f0f10] border border-white/5 group-hover:border-brand-red/20 transition-all duration-700">
+          <div className={`w-full h-40 md:h-72 mb-4 md:mb-10 rounded-[1.2rem] md:rounded-[3rem] overflow-hidden relative shadow-3xl bg-[#0f0f10] border transition-all duration-700 
+            ${isSpecialCategory ? 'border-brand-green/40 scale-[1.02] shadow-[0_0_40px_rgba(239,68,68,0.2)]' : 'border-white/5 group-hover:border-brand-green/20'}
+          `}>
+             {isSpecialCategory && (
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-green/20 via-transparent to-transparent z-10 pointer-events-none"></div>
+             )}
              {product.imageUrl ? (
                 <Image 
                    src={product.imageUrl} 
@@ -457,16 +541,29 @@ const ProductCard = React.memo(({
                 <div className="w-full h-full flex items-center justify-center text-4xl md:text-7xl opacity-10">🍜</div>
              )}
              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60"></div>
-             <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 glass bg-black/80 px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl border border-white/10 shadow-2xl">
-                <span className="text-lg md:text-2xl font-black text-brand-orange tracking-tighter italic">
+             <div className={`absolute bottom-4 right-4 md:bottom-6 md:right-6 glass px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl border shadow-2xl transition-all z-20
+                ${isSpecialCategory 
+                  ? 'bg-brand-green text-white border-white/20 scale-110 shadow-[0_0_20px_rgba(0,202,114,0.3)]' 
+                  : 'bg-black/90 border-brand-yellow/30 shadow-[0_0_15px_rgba(255,204,0,0.1)]'}
+             `}>
+                <span className={`text-base md:text-2xl font-black italic tracking-tighter flex items-center gap-1
+                   ${isSpecialCategory ? 'text-black' : 'text-brand-yellow'}
+                `}>
                    {currentPrice.toLocaleString("ar-IQ")}
-                   <small className="text-[9px] md:text-[10px] font-bold opacity-40 mr-1 uppercase NOT-italic">د.ع</small>
+                   <span className={`text-[8px] md:text-[10px] font-bold opacity-80 uppercase not-italic
+                      ${isSpecialCategory ? 'text-black/60' : 'text-brand-yellow/70'}
+                   `}>د.ع</span>
                 </span>
              </div>
           </div>
 
           <div className="flex-grow">
-             <h3 className="text-xl md:text-2xl font-black text-white mb-2 md:mb-3 tracking-tight">{product.name}</h3>
+             <div className="flex items-center gap-2 mb-2 md:mb-4">
+                <h3 className={`text-xl md:text-3xl font-black transition-all tracking-tight ${isSpecialCategory ? 'text-brand-yellow drop-shadow-[0_0_10px_rgba(255,95,0,0.3)]' : 'text-white'}`}>
+                   {product.name}
+                </h3>
+                {isSpecialCategory && <span className="text-xl animate-bounce">⭐</span>}
+             </div>
              {product.description && (
                 <p className="text-[11px] md:text-[13px] text-gray-500 font-bold leading-relaxed line-clamp-2 opacity-70">
                    {product.description.includes("SIZES:") ? product.description.split("SIZES:")[0] : product.description}
@@ -486,7 +583,7 @@ const ProductCard = React.memo(({
                                   onClick={() => setSelectedSize(size)}
                                   className={`py-2 px-1 rounded-xl text-[9px] font-black border transition-all ${
                                     activeSize === size.name 
-                                      ? 'bg-brand-orange text-white border-brand-orange scale-105' 
+                                      ? 'bg-brand-yellow text-white border-brand-yellow scale-105' 
                                       : 'bg-white/5 text-gray-500 border-white/10'
                                   }`}
                                 >
@@ -499,10 +596,10 @@ const ProductCard = React.memo(({
                              <div className="flex items-center w-full justify-between bg-white/5 rounded-xl md:rounded-3xl p-1 md:p-1.5 border border-white/10">
                                 <button onClick={() => removeFromCart(product.id, activeSize)} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-white text-lg md:text-2xl font-bold active:bg-white/10 rounded-lg">-</button>
                                 <span className="text-xs md:text-lg font-black text-white">{qty}</span>
-                                <button onClick={() => addToCart(product, selectedSize || sizes.find((s:any) => s.name === "وسط"))} className="w-10 h-10 md:w-12 md:h-12 bg-brand-red text-white flex items-center justify-center font-bold rounded-lg md:rounded-2xl shadow-2xl shadow-brand-red/40 active:scale-90">+</button>
+                                <button onClick={() => addToCart(product, selectedSize || sizes.find((s:any) => s.name === "وسط"))} className="w-10 h-10 md:w-12 md:h-12 bg-brand-green text-white flex items-center justify-center font-bold rounded-lg md:rounded-2xl shadow-2xl shadow-brand-green/40 active:scale-90">+</button>
                              </div>
                           ) : (
-                             <button onClick={() => addToCart(product, selectedSize || sizes.find((s:any) => s.name === "وسط"))} className="w-full bg-white/5 hover:bg-brand-red text-white py-4 md:py-5 rounded-xl md:rounded-3xl font-black text-[11px] md:text-xs tracking-widest transition-all active:scale-95 shadow-lg line-clamp-1">
+                             <button onClick={() => addToCart(product, selectedSize || sizes.find((s:any) => s.name === "وسط"))} className="w-full bg-white/5 hover:bg-brand-green text-white py-4 md:py-5 rounded-xl md:rounded-3xl font-black text-[11px] md:text-xs tracking-widest transition-all active:scale-95 shadow-lg line-clamp-1">
                                 إضافة {activeSize}
                              </button>
                           )}
@@ -515,10 +612,10 @@ const ProductCard = React.memo(({
                              <div className="flex items-center w-full justify-between bg-white/5 rounded-xl md:rounded-3xl p-1 md:p-1.5 border border-white/10">
                                 <button onClick={() => removeFromCart(product.id)} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-white text-lg md:text-2xl font-bold active:bg-white/10 rounded-lg">-</button>
                                 <span className="text-xs md:text-lg font-black text-white">{qty}</span>
-                                <button onClick={() => addToCart(product)} className="w-10 h-10 md:w-12 md:h-12 bg-brand-red text-white flex items-center justify-center font-bold rounded-lg md:rounded-2xl shadow-2xl shadow-brand-red/40 active:scale-90">+</button>
+                                <button onClick={() => addToCart(product)} className="w-10 h-10 md:w-12 md:h-12 bg-brand-green text-white flex items-center justify-center font-bold rounded-lg md:rounded-2xl shadow-2xl shadow-brand-green/40 active:scale-90">+</button>
                              </div>
                           ) : (
-                             <button onClick={() => addToCart(product)} className="w-full bg-white/5 hover:bg-brand-red text-white py-4 md:py-5 rounded-xl md:rounded-3xl font-black text-[11px] md:text-xs tracking-widest transition-all active:scale-95 shadow-lg">+ إضافة للطلب</button>
+                             <button onClick={() => addToCart(product)} className="w-full bg-white/5 hover:bg-brand-green text-white py-4 md:py-5 rounded-xl md:rounded-3xl font-black text-[11px] md:text-xs tracking-widest transition-all active:scale-95 shadow-lg">+ إضافة للطلب</button>
                           )}
                        </div>
                     )}
@@ -535,7 +632,7 @@ const ProductCard = React.memo(({
 ProductCard.displayName = "ProductCard";
 
 // ─── Cart Drawer ────────────────────────────────────────────────────────────
-function CartDrawer({
+const CartDrawer = React.memo(({
   cart,
   totalPrice,
   totalItems,
@@ -549,9 +646,9 @@ function CartDrawer({
   totalItems: number;
   onClose: () => void;
   onCheckout: () => void;
-  onAdd: (product: Product, size?: string, price?: number) => void;
+  onAdd: (product: Product, size?: { name: string; price: number }) => void;
   onRemove: (productId: string, sizeName?: string) => void;
-}) {
+}) => {
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center" dir="rtl">
       {/* Backdrop */}
@@ -561,7 +658,10 @@ function CartDrawer({
       />
 
       {/* Drawer */}
-      <div className="relative w-full max-w-lg bg-[#0f0f10] border-t border-white/10 rounded-t-[2.5rem] shadow-2xl animate-slide-up flex flex-col max-h-[80vh]">
+      <div 
+        className="relative w-full max-w-lg bg-[#0f0f10] border-t border-white/10 rounded-t-[2.5rem] shadow-2xl animate-slide-up flex flex-col max-h-[80vh]"
+        style={{ contentVisibility: 'auto' }}
+      >
         {/* Handle bar */}
         <div className="flex justify-center pt-4 pb-2">
           <div className="w-12 h-1 rounded-full bg-white/20" />
@@ -570,7 +670,7 @@ function CartDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="bg-brand-red/20 border border-brand-red/30 rounded-xl px-3 py-1 text-xs font-black text-brand-red">
+            <div className="bg-brand-green/20 border border-brand-green/30 rounded-xl px-3 py-1 text-xs font-black text-brand-green">
               {totalItems} وجبة
             </div>
             <h3 className="text-base font-black text-white">طلبك</h3>
@@ -594,12 +694,13 @@ function CartDrawer({
               <div
                 key={`${item.product.id}-${item.selectedSize ?? "nosize"}-${i}`}
                 className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl p-3"
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '60px' }}
               >
                 {/* Product name & size */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-white truncate">{item.product.name}</p>
                   {item.selectedSize && (
-                    <span className="text-[10px] font-bold text-brand-orange/80">
+                    <span className="text-[10px] font-bold text-brand-yellow/80">
                       {item.selectedSize}
                     </span>
                   )}
@@ -622,8 +723,8 @@ function CartDrawer({
                   </button>
                   <span className="w-6 text-center text-sm font-black text-white">{item.quantity}</span>
                   <button
-                    onClick={() => onAdd(item.product, item.selectedSize, item.selectedPrice)}
-                    className="w-8 h-8 bg-brand-red flex items-center justify-center text-white font-bold rounded-lg active:scale-90 transition-all text-lg shadow-lg shadow-brand-red/30"
+                    onClick={() => onAdd(item.product, item.selectedSize ? { name: item.selectedSize, price: item.selectedPrice! } : undefined)}
+                    className="w-8 h-8 bg-brand-green flex items-center justify-center text-white font-bold rounded-lg active:scale-90 transition-all text-lg shadow-lg shadow-brand-green/30"
                   >
                     +
                   </button>
@@ -637,13 +738,13 @@ function CartDrawer({
         <div className="px-4 py-4 border-t border-white/5 space-y-3">
           <div className="flex items-center justify-between px-1">
             <span className="text-sm font-black text-white">المجموع</span>
-            <span className="text-lg font-black text-brand-orange">
+            <span className="text-lg font-black text-brand-yellow">
               {totalPrice.toLocaleString("ar-IQ")} <small className="text-xs opacity-60">د.ع</small>
             </span>
           </div>
           <button
             onClick={onCheckout}
-            className="w-full bg-brand-red text-white py-4 rounded-2xl font-black text-sm tracking-wide active:scale-95 transition-all shadow-lg shadow-brand-red/30 flex items-center justify-center gap-2"
+            className="w-full bg-brand-green text-white py-4 rounded-2xl font-black text-sm tracking-wide active:scale-95 transition-all shadow-lg shadow-brand-green/30 flex items-center justify-center gap-2"
           >
             <span>إتمام الطلب</span>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -654,4 +755,6 @@ function CartDrawer({
       </div>
     </div>
   );
-}
+});
+
+CartDrawer.displayName = "CartDrawer";

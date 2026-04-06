@@ -1,6 +1,22 @@
 import prisma from "@/lib/prisma";
-import MenuClient from "@/components/MenuClient";
 import { unstable_noStore as noStore } from 'next/cache';
+import dynamicImport from "next/dynamic";
+import { Metadata } from 'next';
+
+const MenuClient = dynamicImport(() => import("@/components/MenuClient"), {
+  ssr: true,
+  loading: () => (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="w-16 h-16 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin"></div>
+    </div>
+  )
+});
+
+export const metadata: Metadata = {
+  title: 'Shawarma Nazo Land | شاورما نازو لاند - أفضل طعم في الموصل',
+  description: 'اطلب أفخر أنواع الشاورما والوجبات السريعة من شاورما نازو لاند في الموصل، حي المزارع. نكهة أصيلة وتوصيل سريع.',
+  keywords: 'شاورما, نازو لاند, الموصل, أكل, مطعم, شاورما دجاج, شاورما لحم, حي المزارع',
+};
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +42,7 @@ export default async function Home() {
   };
 
   return (
-    <main className="min-h-screen pb-32 selection:bg-brand-red selection:text-white bg-[#050505] overflow-x-hidden">
+    <main className="min-h-screen pb-32 selection:bg-brand-green selection:text-white bg-[#050505] overflow-x-hidden">
       <MenuClient categories={categories} settings={settingsData} />
     </main>
   );

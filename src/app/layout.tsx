@@ -9,12 +9,12 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "Tabasco Al-Sham | تباسكو الشام",
-  description: "أشهى الوجبات السريعة في بغداد - بوب الشام",
+  title: "Shawarma Nazo Land | شاورما نازو لاند",
+  description: "أشهى الوجبات السريعة والشاورما في الموصل - حي المزارع",
   icons: {
-    icon: "/55555555555_page-0001.jpg",
-    shortcut: "/55555555555_page-0001.jpg",
-    apple: "/55555555555_page-0001.jpg",
+    icon: "/land.png",
+    shortcut: "/land.png",
+    apple: "/land.png",
   }
 };
 

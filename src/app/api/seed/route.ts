@@ -8,12 +8,12 @@ export async function GET() {
     const categoryCount = await prisma.category.count();
     
     if (categoryCount === 0) {
-      console.log('Seeding Tabasco Al-Sham Menu...');
+      console.log('Seeding Shawarma Nazo Land Menu...');
       
       const categories = [
         { name: 'وجبات الصاج', items: [
           { name: 'وجبة صاج دجاج', desc: 'صاج+فنكر+ثومية', price: 5000 },
-          { name: 'وجبة صاج مشكل تباسكو الشام', desc: 'صاج+فنكر+ثومية+طرشي', price: 9000 },
+          { name: 'وجبة صاج مشكل نازو لاند', desc: 'صاج+فنكر+ثومية+طرشي', price: 9000 },
           { name: 'وجبة صاج عائلي', desc: 'صاج+فنكر+ثومية+طرشي', price: 12000 },
           { name: 'وجبة صاج بالجبن عائلي', desc: 'صاج بالجبن+فنكر+ثومية+طرشي', price: 16500 },
         ]},
@@ -25,11 +25,11 @@ export async function GET() {
         { name: 'البركر', items: [
           { name: 'بركر لحم كلاسك', desc: '', price: 2500 },
           { name: 'بركر دجاج بالجبن', desc: '', price: 2500 },
-          { name: 'بركر دبل لحم تباسكو الشام', desc: '', price: 4000 },
+          { name: 'بركر دبل لحم نازو لاند', desc: '', price: 4000 },
         ]},
         { name: 'الريزو', items: [
           { name: 'ريزو كلاسك', desc: '', price: 5000 },
-          { name: 'ريزو دبل تباسكو الشام', desc: '', price: 8000 },
+          { name: 'ريزو دبل نازو لاند', desc: '', price: 8000 },
         ]},
       ];
 

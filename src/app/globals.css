@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-red: #ff3e3e;
-  --color-brand-red-glow: rgba(255, 62, 62, 0.4);
-  --color-brand-orange: #ff9d00;
-  --color-brand-orange-glow: rgba(255, 157, 0, 0.3);
-  --color-brand-dark: #0a0a0b;
-  --color-brand-dark-glass: rgba(18, 18, 20, 0.7);
-  --color-brand-card: #151518;
-  --color-brand-gold: #ffc107;
+  --color-brand-green: #00ca72;
+  --color-brand-green-glow: rgba(0, 202, 114, 0.4);
+  --color-brand-yellow: #ffcc00;
+  --color-brand-yellow-glow: rgba(255, 204, 0, 0.3);
+  --color-brand-dark: #050507;
+  --color-brand-dark-glass: rgba(10, 10, 15, 0.85);
+  --color-brand-card: #0c0c0e;
+  --color-brand-gold: #ffcc00;
 }
 
 :root {
-  --background: #000000;
+  --background: #050506;
   --foreground: #ffffff;
-  --card-border: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.08);
 }
 
 body {
@@ -25,10 +25,14 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Premium Ribbed Facade Background */
   background-image: 
-    radial-gradient(at 0% 0%, rgba(255, 62, 62, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(255, 157, 0, 0.05) 0px, transparent 50%);
+    linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px),
+    radial-gradient(at 0% 0%, rgba(0, 202, 114, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(255, 204, 0, 0.05) 0px, transparent 50%);
+  background-size: 20px 100%, 100% 100%, 100% 100%;
 }
+
 
 .glass {
   background: var(--color-brand-dark-glass);
@@ -37,12 +41,12 @@ body {
   border: 1px solid var(--card-border);
 }
 
-.neon-red {
-  box-shadow: 0 0 15px var(--color-brand-red-glow);
+.neon-green {
+  box-shadow: 0 0 15px var(--color-brand-green-glow);
 }
 
-.neon-orange {
-  box-shadow: 0 0 15px var(--color-brand-orange-glow);
+.neon-yellow {
+  box-shadow: 0 0 15px var(--color-brand-yellow-glow);
 }
 
 .card-hover {
@@ -70,7 +74,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand-red);
+  background: var(--color-brand-green);
 }
 
 @keyframes fadeInScale {
@@ -92,7 +96,7 @@ body {
 }
 
 .shadow-3xl {
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 62, 62, 0.05);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 202, 114, 0.05);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -101,4 +105,37 @@ body {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+}
+.animate-pulse-slow {
+  animation: pulseSlow 3s ease-in-out infinite;
+}
+
+@keyframes gradientX {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradientX 5s ease infinite;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
 }

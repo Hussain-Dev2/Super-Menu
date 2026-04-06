@@ -1,6 +1,15 @@
-import AdminDashboard from "../../components/admin/AdminDashboard";
 import prisma from "@/lib/prisma";
 import { unstable_noStore as noStore } from 'next/cache';
+import dynamicImport from "next/dynamic";
+
+const AdminDashboard = dynamicImport(() => import("../../components/admin/AdminDashboard"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+       <div className="w-16 h-16 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin"></div>
+    </div>
+  )
+});
 
 export const dynamic = "force-dynamic";
 

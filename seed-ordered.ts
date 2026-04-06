@@ -2,106 +2,120 @@ import prisma from './src/lib/prisma';
 
 async function seed() {
   try {
-    console.log('Seeding Highly Organized Tabasco Al-Sham Menu...');
+    console.log('Seeding Shawarma Nazo Land Menu...');
     
     // Clear existing
     await prisma.product.deleteMany({});
     await prisma.category.deleteMany({});
 
     const categories = [
-      { 
-        name: 'الوجبات', 
+      {
+        name: 'شاورما',
         items: [
-          { name: 'وجبة صاج دجاج', desc: '(صاج + فنكر + ثومية)', price: 5000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'وجبة صاج مشكل تباسكو الشام', desc: '(صاج + فنكر + ثومية + طرشي)', price: 9000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'وجبة صاج عائلي', desc: '(صاج + فنكر + ثومية + طرشي)', price: 12000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'وجبة صاج بالجبن عائلي', desc: '(صاج بالجبن + فنكر + ثومية + طرشي)', price: 16500, img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60' },
+          { name: 'شاورما عربي كبس', desc: 'شرائح شاورما + ثومية + مخلل', price: 2000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'شاورما عربي سبايسي', desc: 'شرائح شاورما + ثومية + مخلل + هلابينو', price: 2500, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'شاورما صمون فرنسي', desc: 'شرائح شاورما + ثومية + مخلل + خس', price: 2000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'شاورما صمون فرنسي سبايسي', desc: 'شرائح شاورما + ثومية + مخلل + هلابينو', price: 2500, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'وجبة شاورما عربي', desc: 'شاورما مقطعة + ثومية + مخلل + فنكر', price: 5000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'شاورما اكسترا', desc: 'شرائح شاورما + جبنة موزاريلا + فطر + ثومية + مخلل + ذرة', price: 4000, img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60' },
+          { name: 'شاورما فرط', desc: 'ربع كيلو شاورما + مخلل + ثومية + فنكر', price: 5000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'الشاورما', 
+      {
+        name: 'سناكات',
         items: [
-          { name: 'صاج دجاج كلاسك', desc: 'شاورما دجاج بتتبيلة شامية', price: 2000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'صاج دجاج عربي', desc: 'وجبة عربي مقطعة مع فنكر وثومية', price: 2000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'صاج دجاج بالجبن', desc: 'شاورما دجاج مع جبنة قشقوان', price: 3000, img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60' },
-          { name: 'صاج دجاج بالجبن عربي', desc: 'وجبة عربي بالجبنة مع كامل الملحقات', price: 3000, img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60' },
-          { name: 'شاورما دجاج صمون فرنسي', desc: 'شاورما دجاج داخل خبز الصمون الفرنسي', price: 2000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'كيلو شاورما دجاج', desc: 'حصة الـ 1000 غرام مع الخبز', price: 18000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
-          { name: 'نصف كيلو شاورما دجاج', desc: 'حصة الـ 500 غرام لتجربة فاخرة', price: 9000, img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ساندويش فاهيتا لحم', desc: 'شرائح لحم + فطر + فليفلة + بصل + صوص', price: 3500, img: 'https://images.unsplash.com/photo-1501238298269-fb2c428a1ea5?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ساندويش مكسيكانو لحم', desc: 'شرائح لحم + فطر + فليفلة + بصل + صوص + هلابينو', price: 3500, img: 'https://images.unsplash.com/photo-1501238298269-fb2c428a1ea5?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ساندويش فاهيتا دجاج', desc: 'شرائح دجاج + فطر + فليفلة + بصل + صوص', price: 3000, img: 'https://images.unsplash.com/photo-1525351326368-efbb5cb6814d?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ساندويش مكسيكانو دجاج', desc: 'شرائح دجاج + فطر + فليفلة + بصل + صوص + هلابينو', price: 3000, img: 'https://images.unsplash.com/photo-1525351326368-efbb5cb6814d?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'البيتزا', 
+      {
+        name: 'كرسبي',
         items: [
-          { name: 'بيتزا دجاج', desc: 'SIZES:صغير-6000,وسط-8000,كبير-10000', price: 8000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بيتزا خضار', desc: 'SIZES:صغير-5000,وسط-7000,كبير-9000', price: 7000, img: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بيتزا ببروني', desc: 'SIZES:صغير-5000,وسط-7000,كبير-9000', price: 7000, img: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بيتزا الفصول الأربعة', desc: 'SIZES:صغير-6000,وسط-8000,كبير-10000', price: 8000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بيتزا محشية الأطراف', desc: 'متوفرة بحجم كبير فقط', price: 12000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'لغم دجاج تباسكو الشام', desc: 'خلطة مميزة بالجبن', price: 5000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'لغم لحم', desc: 'لحم طازج مع الجبن', price: 6000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'عروسة دجاج بالجبن', desc: 'قطعة دجاج محمصة بالجبن', price: 4000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'فطيرة دجاج', desc: 'فطينة دجاج بالفرن', price: 6000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'فطيرة خضار', desc: 'فطيرة خضار لذيذة', price: 5000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
-          { name: 'فطيرة لحم', desc: 'فطيرة لحم بالفرن', price: 6000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
+          { name: 'كرسبي كلاسيك', desc: 'دجاج مقرمش + خس + طماطة + صوص', price: 2500, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+          { name: 'كرسبي بالجبن', desc: 'دجاج مقرمش + خس + طماطة + جبن شيدر + صوص', price: 3000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+          { name: 'زنجر كلاسيك', desc: 'دجاج مقرمش حار + خس + طماطة + صوص', price: 2500, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+          { name: 'تويستر', desc: 'خبز صاج + دجاج مقرمش + خس + جبن شيدر + فنكر', price: 3000, img: 'https://images.unsplash.com/photo-1628815874207-5502ca0b355d?w=500&auto=format&fit=crop&q=60' },
+          { name: 'سكالوب دجاج', desc: 'قطعة دجاج مقرمشة + خس + طماطة + فنكر + كولسلو + صوص', price: 3000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'البركر', 
+      {
+        name: 'بيتزا',
         items: [
-          { name: 'بركر لحم كلاسيك', desc: 'لحم مشوي طازج', price: 2500, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر فطر', desc: 'لحم مع صوص الفطر', price: 2500, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر لحم بالجبن', desc: 'كلاسيك مع الجبن', price: 3000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر لحم باربيكيو', desc: 'لحم مع باربيكيو', price: 3000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر لحم مكسيكانو', desc: 'لحم حار', price: 3000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر لحم كرز', desc: 'نكهة خاصة بالكرز', price: 3500, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر لحم دبل', desc: 'قطعتين لحم مع الجبن', price: 5000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر دجاج كلاسيك', desc: 'دجاج مقرمش', price: 2000, img: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر دجاج بالجبن', desc: 'دجاج بالجبن شيدر', price: 2500, img: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر دجاج مكسيكانو', desc: 'دجاج مكسيكانو حار', price: 2500, img: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر دجاج دبل', desc: 'وجبة دجاج دبل', price: 4500, img: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر لحم تباسكو الشام', desc: 'بركرنا الخاص الملكي', price: 4000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&auto=format&fit=crop&q=60' },
-          { name: 'بركر دجاج تباسكو الشام', desc: 'دجاج بخلطة تباسكو', price: 3500, img: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بيتزا لحم', desc: 'لحم طازج مع الجبن والخضروات', price: 6000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بيتزا دجاج', desc: 'دجاج مشوي مع الجبن والخضروات', price: 5000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بيتزا ببروني', desc: 'ببروني بقري مع الجبن', price: 5000, img: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بيتزا خضار', desc: 'تشكيلة خضروات طازجة مع الجبن', price: 5000, img: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بيتزا ماكريتا', desc: 'صلصة طماطم وجبنة موزاريلا', price: 5000, img: 'https://images.unsplash.com/photo-1573821663912-5b99042adbb6?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بيتزا نازولاند', desc: 'خلطة نازولاند الخاصة والمميزة', price: 6000, img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'الريزو', 
+      {
+        name: 'بركر',
         items: [
-          { name: 'ريزو كلاسيك', desc: 'رز مع دجاج', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ريزو جبن', desc: 'رز مع صوص الجبن', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ريزو مدخن', desc: 'رز بنكهة مدخنة', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ريزو سبايسي', desc: 'رز حار مع دجاج', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ريزو تباسكو الشام', desc: 'ريزو بخلطتنا الخاصة', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ريزو شاورما دجاج', desc: 'رز مع شاورما الدجاج', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ريزو دبل تباسكو الشام', desc: 'وجبة ريزو دبل مشبعة', price: 8000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'كلاسيك بركر', desc: 'قطعة لحم + خس + طماطة + صوص + بصل مكرمل', price: 3000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'تشيز بركر', desc: 'قطعة لحم + خس + طماطة + جبن شيدر + بصل مكرمل + صوص', price: 3500, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بركر سبايسي', desc: 'قطعة لحم + طماطة + خس + صوص + بصل مكرمل + هلابينو', price: 3500, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بركر مشروم', desc: 'قطعة لحم + خس + طماطة + فطر بالكريمية + صوص', price: 4000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بركر نازولاند', desc: 'قطعة لحم دبل + خس + طماطة + جبن شيدر + بصل مكرمل', price: 5000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'الدجاج المقرمش', 
+      {
+        name: 'ريزو',
         items: [
-          { name: 'ستربس 4 قطع', desc: 'مع كامل الملحقات', price: 5000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ستربس عائلي', desc: 'وجبة عائلية كبيرة', price: 10000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
-          { name: 'وجدة كنتاكي 3 قطع', desc: 'قطع دجاج مقرمشة', price: 6000, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=60' },
-          { name: 'وجدة كنتاكي 6 قطع', desc: 'قطع دجاج مشبعة', price: 12000, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=60' },
-          { name: 'وجدة كنتاكي عائلي', desc: 'بوكس عائلي 12 قطعة', price: 20000, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو كلاسيك', desc: 'رز + قطع دجاج مقرمش + صوص', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو شاورما', desc: 'رز + شرائح شاورما + صوص', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو هني ماستر', desc: 'رز + قطع دجاج مقرمش + صوص هني ماستر', price: 5500, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو مدخن', desc: 'رز + قطع دجاج مقرمش + صوص باربيكيو', price: 5500, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو جبن', desc: 'رز + قطع دجاج مقرمش + جبن + صوص', price: 5500, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو سبايسي', desc: 'رز + قطع دجاج مقرمش + صوص + سبايسي صوص', price: 5000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ريزو نازولاند', desc: 'رز + شرائح دجاج + قطع دجاج + صوص + هلابينو', price: 6000, img: 'https://images.unsplash.com/photo-1512058560566-427a1bd5a5cd?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'المقبلات والمشروبات', 
+      {
+        name: 'اطباق المقرمشات',
         items: [
-          { name: 'مقبلات مشكلة', desc: 'صحن مقبلات منوع', price: 2000, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
-          { name: 'صحن فنكر', desc: 'بطاطا مقلية', price: 1000, img: 'https://images.unsplash.com/photo-1630384066252-19e1ad95b4f8?w=500&auto=format&fit=crop&q=60' },
-          { name: 'صحن فنكر بالجبن', desc: 'بطاطا مقلية بالجبنة', price: 1500, img: 'https://images.unsplash.com/photo-1630384066252-19e1ad95b4f8?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ببسي', desc: 'قوطية', price: 500, img: 'https://plus.unsplash.com/premium_photo-1678253165275-c0528e19c0b7?w=500&auto=format&fit=crop&q=60' },
+          { name: 'طبق زنجر مقرمش', desc: 'قطع زنجر مقرمش 4 + صوص + فنكر + صمون', price: 5000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+          { name: 'طبق زنجر عائلي', desc: 'قطع زنجر دجاج 6 + صوص + فنكر + صمون', price: 7000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+          { name: 'طبق اسكالوب دجاج', desc: 'دجاج مقرمش + صوص + فنكر + صمون + كولسلو', price: 6000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+          { name: 'تندر هني ماستر', desc: 'اصابع الدجاج المقرمش + صوص هني ماستر + فنكر', price: 5000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=60' },
+        ]
+      },
+      {
+        name: 'بطاطا',
+        items: [
+          { name: 'بطاطا صغير', desc: 'صحن بطاطا مقلية صغير', price: 1000, img: 'https://images.unsplash.com/photo-1630384066252-19e1ad95b4f8?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بطاطا كبير', desc: 'صحن بطاطا مقلية كبير', price: 2000, img: 'https://images.unsplash.com/photo-1630384066252-19e1ad95b4f8?w=500&auto=format&fit=crop&q=60' },
+          { name: 'بطاطا جبن وهليبينو', desc: 'بطاطا مقلية مع الجبن والهلابينو', price: 2500, img: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ميكس البطاطا', desc: 'تشكيلة بطاطا منوعة ومميزة', price: 3500, img: 'https://images.unsplash.com/photo-1630384066252-19e1ad95b4f8?w=500&auto=format&fit=crop&q=60' },
+        ]
+      },
+      {
+        name: 'مقبلات',
+        items: [
+          { name: 'مقبلات كبير', desc: 'صحن مقبلات مشكل كبير', price: 3500, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
+          { name: 'مقبلات وسط', desc: 'صحن مقبلات مشكل وسط', price: 2500, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
+          { name: 'مقبلات صغير', desc: 'صحن مقبلات مشكل صغير', price: 1500, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ورق عنب كبير', desc: 'وجبة ورق عنب كبيرة', price: 4000, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ورق عنب صغير', desc: 'وجبة ورق عنب صغيرة', price: 2000, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
+        ]
+      },
+      {
+        name: 'مشروبات',
+        items: [
+          { name: 'ببسي', desc: 'قوطية', price: 500, img: 'https://images.unsplash.com/photo-1622483767028-3f66f34a50f4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'سفن', desc: 'قوطية', price: 500, img: 'https://images.unsplash.com/photo-1622483767028-3f66f34a50f4?w=500&auto=format&fit=crop&q=60' },
+          { name: 'ميرندا', desc: 'قوطية', price: 500, img: 'https://images.unsplash.com/photo-1622483767028-3f66f34a50f4?w=500&auto=format&fit=crop&q=60' },
           { name: 'لبن', desc: 'كوب لبن', price: 500, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60' },
+          { name: 'مياه معدنية', desc: 'بطل ماء', price: 250, img: 'https://images.unsplash.com/photo-1559839914-17aae19cea9e?w=500&auto=format&fit=crop&q=60' },
         ]
       },
-      { 
-        name: 'الصوصات', 
+      {
+        name: 'الجديد والقسم الخاص',
         items: [
-          { name: 'رانش', desc: 'صوص بارد', price: 500, img: 'https://images.unsplash.com/photo-1582233543660-5f65342d069b?w=500&auto=format&fit=crop&q=60' },
-          { name: 'ثومية', desc: 'ثومية المطعم الخاصة', price: 500, img: 'https://images.unsplash.com/photo-1582233543660-5f65342d069b?w=500&auto=format&fit=crop&q=60' },
-          { name: 'سبايسي', desc: 'صوص حار جداً', price: 500, img: 'https://images.unsplash.com/photo-1582233543660-5f65342d069b?w=500&auto=format&fit=crop&q=60' },
+          { name: 'وجبة دايت', desc: 'جديدنا وجبة دايت صحية', price: 5000, img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&auto=format&fit=crop&q=60' },
+          { name: 'صلصات منوعة', desc: 'تشكيلة من صوصاتنا الخاصة', price: 500, img: 'https://images.unsplash.com/photo-1582233543660-5f65342d069b?w=500&auto=format&fit=crop&q=60' },
         ]
       }
     ];

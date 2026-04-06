@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, memo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { 
   createCategory, deleteCategory, updateCategory,
@@ -49,6 +49,136 @@ const Icons = {
   )
 };
 
+// ─── Sub Components ──────────────────────────────────────────────────────
+
+const OrderCard = memo(({ order, handleStatusUpdate, formatTel }: any) => (
+  <div className={`glass p-5 md:p-10 rounded-3xl md:rounded-[4rem] border transition-all duration-700 relative group overflow-hidden ${order.status === 'DONE' ? 'border-green-500/20 bg-green-500/5 opacity-60' : 'border-white/5 bg-white/[0.02] hover:border-brand-green/20'}`}>
+    <div className="flex justify-between items-start mb-4 md:mb-10 flex-row-reverse">
+      <div className="text-right">
+        <span className="text-[9px] md:text-[10px] font-black text-brand-green uppercase tracking-widest block mb-1">رقم الطلب</span>
+        <h3 className="text-xl md:text-3xl font-black italic tracking-tighter">#{order.id.slice(-4).toUpperCase()}</h3>
+      </div>
+      <div className={`px-3 py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border ${order.status === 'DONE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-yellow/10 text-brand-yellow border-brand-yellow/20 animate-pulse'}`}>
+        {order.status === 'DONE' ? 'مكتمل' : 'قيد التحضير'}
+      </div>
+    </div>
+
+    <div className="space-y-3 md:space-y-6 mb-4 md:mb-10 border-y border-white/5 py-4 md:py-8">
+      {order.items.map((item: any, idx: number) => (
+        <div key={idx} className="flex justify-between items-center flex-row-reverse">
+          <span className="text-xs md:text-sm font-black text-white">{item.name}</span>
+          <span className="bg-white/5 px-2 py-1 rounded-lg text-xs font-black text-white">×{item.quantity}</span>
+        </div>
+      ))}
+    </div>
+
+    <div className="flex justify-between items-center mb-4 md:mb-10 flex-row-reverse">
+      <span className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">المجموع</span>
+      <span className="text-lg md:text-2xl font-black text-brand-yellow italic tracking-tighter">{order.total.toLocaleString()} د.ع</span>
+    </div>
+
+    <div className="flex gap-3 mt-auto">
+      {order.status !== 'DONE' && (
+        <button
+          onClick={() => handleStatusUpdate(order.id, 'DONE')}
+          className="flex-1 py-3.5 md:py-5 bg-green-500 text-white rounded-2xl md:rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-500/30 active:scale-95 transition-all"
+        >
+          إنهاء الطلب
+        </button>
+      )}
+      <a
+        href={`https://wa.me/${formatTel(order.customerPhone)}?text=${encodeURIComponent(`مرحباً! طلبك رقم #${order.id.slice(-4).toUpperCase()} جاهز الآن من شاورما نازو لاند. المجموع: ${order.total.toLocaleString()} د.ع`)}`}
+        target="_blank"
+        className="w-12 h-12 md:w-16 md:h-16 bg-white/5 rounded-2xl md:rounded-3xl flex items-center justify-center border border-white/5 hover:bg-white/10 transition-all active:scale-95 text-xl"
+      >💬</a>
+    </div>
+  </div>
+));
+
+const CategoryItem = memo(({ category, editingCatId, setEditingCatId, editCatName, setEditCatName, updateCategory, setConfirmModal }: any) => (
+  <div className="flex justify-between items-center bg-white/[0.02] p-5 rounded-2xl border border-white/[0.02] group/cat flex-row-reverse">
+    {editingCatId === category.id ? (
+      <div className="flex gap-2 w-full flex-row-reverse">
+        <input 
+          autoFocus 
+          type="text" 
+          value={editCatName} 
+          onChange={e => setEditCatName(e.target.value)} 
+          className="flex-1 bg-white/10 border border-brand-green/30 rounded-xl px-4 text-xs font-black outline-none" 
+        />
+        <button 
+          onClick={async () => { await updateCategory(category.id, editCatName); setEditingCatId(null); }} 
+          className="bg-brand-green p-2 rounded-lg text-white"
+        >
+          <Icons.Check />
+        </button>
+      </div>
+    ) : (
+      <>
+        <span className="font-black text-xs text-gray-300">{category.name}</span>
+        <div className="flex gap-1.5 opacity-0 group-hover/cat:opacity-100 transition-all flex-row-reverse">
+          <button 
+            onClick={() => { setEditingCatId(category.id); setEditCatName(category.name); }} 
+            className="p-2 h-9 w-9 rounded-xl bg-white/5 text-gray-500 hover:text-white"
+          >
+            <Icons.Edit />
+          </button>
+          <button 
+            onClick={() => setConfirmModal({show: true, type: 'category', id: category.id})} 
+            className="p-2 h-9 w-9 rounded-xl bg-brand-green/10 text-brand-green hover:bg-brand-green hover:text-white"
+          >
+            <Icons.Trash />
+          </button>
+        </div>
+      </>
+    )}
+  </div>
+));
+
+const ProductItem = memo(({ product, categoryId, setEditingProdId, setEditProdData, editFormRef, setConfirmModal }: any) => (
+  <div
+    className="flex flex-row-reverse justify-between items-center bg-white/[0.02] p-3 md:p-4 rounded-xl md:rounded-[2rem] border border-white/5 hover:border-brand-green/20 transition-all gap-3"
+    style={{ contentVisibility: 'auto', containIntrinsicSize: '72px' }}
+  >
+    <div className="flex items-center gap-3 flex-row-reverse flex-1 min-w-0">
+      <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl overflow-hidden border border-white/10 shrink-0">
+        <img src={product.imageUrl || "/burger-placeholder.png"} className="w-full h-full object-cover" />
+      </div>
+      <div className="text-right flex-1 min-w-0">
+        <h4 className="text-xs md:text-sm font-black text-white truncate">{product.name}</h4>
+        <div className="flex items-center gap-1.5 mt-1 flex-row-reverse">
+          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${product.isAvailable ? 'bg-green-500/10 text-green-500' : 'bg-brand-green/10 text-brand-green'}`}>
+            {product.isAvailable ? 'متوفر' : 'نفد'}
+          </span>
+          <span className="text-[9px] font-bold text-brand-yellow">{product.price.toLocaleString()} د.ع</span>
+        </div>
+      </div>
+    </div>
+    <div className="flex flex-col gap-1.5 shrink-0">
+      <button
+        onClick={() => { 
+          setEditingProdId(product.id); 
+          setEditProdData({ ...product, categoryId }); 
+          setTimeout(() => editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); 
+        }}
+        className="p-2.5 bg-white/5 text-gray-500 rounded-xl hover:text-white active:scale-90 transition-all border border-white/5"
+      >
+        <Icons.Edit />
+      </button>
+      <button
+        onClick={() => setConfirmModal({show: true, type: 'product', id: product.id})}
+        className="p-2.5 bg-brand-green/10 text-brand-green rounded-xl hover:bg-brand-green hover:text-white active:scale-90 transition-all border border-brand-green/20"
+      >
+        <Icons.Trash />
+      </button>
+    </div>
+  </div>
+));
+
+OrderCard.displayName = "OrderCard";
+CategoryItem.displayName = "CategoryItem";
+ProductItem.displayName = "ProductItem";
+
 export default function AdminDashboard({ initialCategories, initialOrders, isOpenInitial, lastOpenedAt, settings }: any) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(isOpenInitial);
@@ -57,6 +187,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
   const [activeTab, setActiveTab] = useState("orders");
   const [confirmModal, setConfirmModal] = useState<{show: boolean, type: 'category' | 'product', id: string} | null>(null);
   const [localLastOpenedAt, setLocalLastOpenedAt] = useState(lastOpenedAt);
+  const [isPending, startTransition] = useTransition();
 
   // Settings state
   const [openDays, setOpenDays] = useState<string[]>(settings?.openDays?.split(',') || ['1','2','3','4','5','6','0']);
@@ -141,7 +272,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
       }
     } catch (error: any) {
       console.error("Upload Error:", error);
-      alert("فشل رفع الصورة: " + (error.message || "تأكد من إعدادات Supabase Storage"));
+      alert("فشل رفع الصورة: " + (error.message || "تأكد من إعدادات Supabase Storage في نظام شاورما نازولاند"));
     } finally {
       setIsUploading(false);
     }
@@ -180,7 +311,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-[#050505] font-cairo overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,#ff3b3b15,transparent_50%)]"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,#00ca7220,transparent_50%)]"></div>
         <form onSubmit={(e) => {
           e.preventDefault();
           if (password === "admin123") setIsAuthenticated(true);
@@ -188,14 +319,14 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         }} className="glass bg-white/[0.01] p-12 rounded-[4rem] w-full max-w-md shadow-2xl border border-white/5 relative z-10 text-center animate-fade-in">
           <div className="mb-10 group relative">
             {/* Ultra-Smooth Radiant Container */}
-            <div className="w-32 h-32 bg-gradient-to-br from-[#ff5f00] via-[#ff3b3b] to-[#e62e2e] rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_20px_60px_rgba(255,59,59,0.4)] border border-white/20 relative group-hover:scale-110 transition-all duration-1000 ease-in-out">
+            <div className="w-32 h-32 bg-gradient-to-br from-brand-green via-brand-yellow to-brand-green rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_20px_60px_rgba(0,202,114,0.4)] border border-white/20 relative group-hover:scale-110 transition-all duration-1000 ease-in-out">
               {/* Diffused Glow Layer */}
               <div className="absolute inset-0 bg-white/10 rounded-full blur-xl opacity-40 animate-pulse"></div>
               
               {/* Perfectly Blended Inner Circle */}
               <div className="relative w-[5.8rem] h-[5.8rem] bg-white rounded-full flex items-center justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.1)] border-4 border-white/10 overflow-hidden">
                 <img 
-                  src="/55555555555_page-0001.jpg" 
+                  src="/land.png" 
                   alt="Logo" 
                   className="w-full h-full object-contain scale-95" 
                 />
@@ -205,28 +336,31 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
               <div className="absolute inset-[-4px] rounded-full border border-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
             </div>
             
-            <h1 className="text-4xl font-black text-white tracking-tighter leading-none italic animate-gradient-x bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white">TABASCO AL-SHAM</h1>
-            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] mt-5">Security Protocol Active</p>
+            <h1 className="text-3xl font-black mb-4 tracking-tighter leading-none italic uppercase flex flex-col items-center select-none">
+               <span className="text-brand-green drop-shadow-[0_0_15px_rgba(0,202,114,0.3)]">SHAWARMA</span>
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-yellow via-white to-brand-yellow animate-gradient-x scale-90 -mt-1">NAZO LAND</span>
+            </h1>
+            <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em] mt-2">Administrative Access Portal</p>
           </div>
           
           <div className="space-y-6">
             <div className="relative group/input overflow-hidden rounded-[2rem]">
-               <div className="absolute inset-0 bg-gradient-to-r from-brand-red/10 via-transparent to-brand-orange/10 opacity-0 group-focus-within/input:opacity-100 transition-opacity"></div>
+               <div className="absolute inset-0 bg-gradient-to-r from-brand-green/10 via-transparent to-brand-yellow/10 opacity-0 group-focus-within/input:opacity-100 transition-opacity"></div>
                <input
                  autoFocus
                  type="password"
                  value={password}
                  onChange={(e) => setPassword(e.target.value)}
-                 className="w-full bg-white/[0.03] border border-white/5 rounded-[2rem] px-8 py-6 text-white text-base md:text-xl font-black text-center focus:outline-none focus:border-brand-red/40 focus:bg-white/[0.05] transition-all relative z-10 placeholder:text-gray-800"
+                 className="w-full bg-white/[0.03] border border-white/5 rounded-[2rem] px-8 py-6 text-white text-base md:text-xl font-black text-center focus:outline-none focus:border-brand-green/40 focus:bg-white/[0.05] transition-all relative z-10 placeholder:text-gray-800"
                  placeholder="••••••••"
                />
             </div>
             
             <button 
               type="submit" 
-              className="group relative w-full bg-white text-black py-5 rounded-[2rem] font-black text-lg hover:bg-brand-red hover:text-white transition-all duration-500 overflow-hidden shadow-2xl active:scale-[0.95]"
+              className="group relative w-full bg-white text-black py-5 rounded-[2rem] font-black text-lg hover:bg-brand-green hover:text-white transition-all duration-500 overflow-hidden shadow-2xl active:scale-[0.95]"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-red to-brand-orange opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-green to-brand-yellow opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <span className="relative z-10 uppercase tracking-[0.2em] italic">دخول النظام</span>
             </button>
           </div>
@@ -242,7 +376,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-fade-in">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setConfirmModal(null)} />
           <div className="glass bg-[#0f0f10] p-8 rounded-[3rem] w-full max-sm relative z-10 border border-white/5 text-center shadow-3xl">
-             <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+             <div className="w-16 h-16 bg-brand-green/10 text-brand-green rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Icons.Trash />
               </div>
              <h3 className="text-xl font-black mb-2">هل أنت متأكد؟</h3>
@@ -253,7 +387,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
              </p>
              <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => setConfirmModal(null)} className="py-4 bg-white/5 rounded-2xl font-black text-xs border border-white/5 hover:bg-white/10">إلغاء</button>
-                <button onClick={handleConfirm} className="py-4 bg-red-500 text-white rounded-2xl font-black text-xs shadow-xl shadow-red-500/20">تأكيد الحذف</button>
+                <button onClick={handleConfirm} className="py-4 bg-brand-green text-white rounded-2xl font-black text-xs shadow-xl shadow-brand-green/20">تأكيد الحذف</button>
              </div>
           </div>
         </div>
@@ -267,18 +401,18 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
             className="flex items-center gap-2 md:gap-4 bg-white/5 px-3 md:px-6 py-2.5 md:py-4 rounded-xl md:rounded-2xl border border-white/5 cursor-pointer select-none active:scale-95 flex-row-reverse transition-all"
             onClick={handleToggleStore}
           >
-            <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-widest ${isOpen ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-widest ${isOpen ? 'text-green-500' : 'text-brand-green'}`}>
               {isOpen ? 'مفتوح' : 'مغلق'}
             </span>
-            <div className={`w-10 h-5 md:w-12 md:h-6 rounded-full relative transition-all duration-500 ${isOpen ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-              <div className={`absolute top-0.5 md:top-1 w-4 h-4 rounded-full transition-all duration-500 shadow-lg ${isOpen ? 'right-5 md:right-7 bg-green-500' : 'right-0.5 md:right-1 bg-red-500'}`}></div>
+            <div className={`w-10 h-5 md:w-12 md:h-6 rounded-full relative transition-all duration-500 ${isOpen ? 'bg-green-500/20' : 'bg-brand-green/20'}`}>
+              <div className={`absolute top-0.5 md:top-1 w-4 h-4 rounded-full transition-all duration-500 shadow-lg ${isOpen ? 'right-5 md:right-7 bg-green-500' : 'right-0.5 md:right-1 bg-brand-green'}`}></div>
             </div>
             <span className="text-[9px] font-black uppercase text-gray-500 hidden sm:block">المطعم:</span>
           </div>
 
           <button
             onClick={() => setIsAuthenticated(false)}
-            className="flex items-center gap-2 bg-white/5 hover:bg-red-500/10 hover:text-red-500 px-3 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black border border-white/5 transition-all text-gray-500"
+            className="flex items-center gap-2 bg-white/5 hover:bg-brand-green/10 hover:text-brand-green px-3 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black border border-white/5 transition-all text-gray-500"
           >
             <Icons.Logout />
             <span className="hidden sm:inline">تسجيل الخروج</span>
@@ -290,15 +424,15 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         
         {/* ANALYTICS OVERVIEW */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-8 md:mb-16">
-          <div className="glass bg-brand-red/5 p-4 md:p-8 rounded-2xl md:rounded-[3rem] border border-brand-red/10 relative overflow-hidden transition-all hover:bg-brand-red/10 group">
-            <span className="text-[9px] md:text-[10px] font-black text-brand-red uppercase tracking-widest block mb-1">طلبات اليوم</span>
+          <div className="glass bg-brand-green/5 p-4 md:p-8 rounded-2xl md:rounded-[3rem] border border-brand-green/10 relative overflow-hidden transition-all hover:bg-brand-green/10 group">
+            <span className="text-[9px] md:text-[10px] font-black text-brand-green uppercase tracking-widest block mb-1">طلبات اليوم</span>
             <div className="text-2xl md:text-3xl font-black italic">{todayOrdersCount}</div>
-            <div className="absolute top-[-20px] right-[-20px] w-20 h-20 bg-brand-red/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+            <div className="absolute top-[-20px] right-[-20px] w-20 h-20 bg-brand-green/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
           </div>
           
           <div className="glass bg-white/[0.02] p-4 md:p-8 rounded-2xl md:rounded-[3rem] border border-white/5 relative overflow-hidden transition-all hover:bg-white/[0.05]">
             <span className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-1">نشط حالياً</span>
-            <div className="text-2xl md:text-3xl font-black italic text-brand-orange">{activeOrdersCount}</div>
+            <div className="text-2xl md:text-3xl font-black italic text-brand-yellow">{activeOrdersCount}</div>
           </div>
 
           <div className="col-span-2 lg:col-span-1 xl:col-span-3 glass bg-white/[0.01] p-4 md:p-8 rounded-2xl md:rounded-[3rem] border border-white/5 flex items-center justify-between flex-row-reverse border-dashed">
@@ -315,11 +449,11 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         {/* Tab Selection */}
         <div className="grid grid-cols-3 gap-2 md:flex md:gap-6 mb-8 md:mb-16">
           <button 
-            onClick={() => setActiveTab("settings")} 
+            onClick={() => startTransition(() => setActiveTab("settings"))} 
             className={`flex-1 py-3 md:py-4 px-4 md:px-14 rounded-[1.2rem] md:rounded-[2.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex items-center justify-center gap-3 md:gap-5 border-2 ${
               activeTab === "settings" 
-                ? 'bg-brand-orange text-white border-brand-orange shadow-[0_20px_50px_rgba(255,95,0,0.3)] scale-[1.02] z-20' 
-                : 'bg-white/5 text-brand-orange/60 border-brand-orange/20 hover:bg-brand-orange/5 hover:text-brand-orange group'
+                ? 'bg-brand-yellow text-black border-brand-yellow shadow-[0_20px_50px_rgba(255,204,0,0.3)] scale-[1.02] z-20' 
+                : 'bg-white/5 text-brand-yellow/60 border-brand-yellow/20 hover:bg-brand-yellow/5 hover:text-brand-yellow group'
             }`}
           >
             <div className={`${activeTab === "settings" ? 'animate-spin-slow' : 'group-hover:animate-spin-slow'}`}>
@@ -332,10 +466,10 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
           </button>
 
           <button 
-            onClick={() => setActiveTab("menu")} 
+            onClick={() => startTransition(() => setActiveTab("menu"))} 
             className={`flex-1 py-3 md:py-4 px-4 md:px-14 rounded-[1.2rem] md:rounded-[2.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex items-center justify-center gap-3 md:gap-5 border-2 ${
               activeTab === "menu" 
-                ? 'bg-brand-red text-white border-brand-red shadow-[0_20px_50px_rgba(255,59,59,0.3)] scale-[1.02] z-20' 
+                ? 'bg-brand-green text-white border-brand-green shadow-[0_20px_50px_rgba(0,202,114,0.3)] scale-[1.02] z-20' 
                 : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10'
             }`}
           >
@@ -346,10 +480,10 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
           </button>
 
           <button 
-            onClick={() => setActiveTab("orders")} 
+            onClick={() => startTransition(() => setActiveTab("orders"))} 
             className={`flex-1 py-3 md:py-4 px-4 md:px-14 rounded-[1.2rem] md:rounded-[2.5rem] text-[10px] md:text-sm font-black tracking-widest uppercase transition-all duration-700 flex items-center justify-center gap-3 md:gap-5 border-2 ${
               activeTab === "orders" 
-                ? 'bg-brand-red text-white border-brand-red shadow-[0_20px_50px_rgba(255,59,59,0.3)] scale-[1.02] z-20' 
+                ? 'bg-brand-green text-white border-brand-green shadow-[0_20px_50px_rgba(0,202,114,0.3)] scale-[1.02] z-20' 
                 : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10'
             }`}
           >
@@ -374,47 +508,12 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                 </div>
               ) : (
                 initialOrders.map((o: any) => (
-                  <div key={o.id} className={`glass p-5 md:p-10 rounded-3xl md:rounded-[4rem] border transition-all duration-700 relative group overflow-hidden ${o.status === 'DONE' ? 'border-green-500/20 bg-green-500/5 opacity-60' : 'border-white/5 bg-white/[0.02] hover:border-brand-red/20'}`}>
-                    <div className="flex justify-between items-start mb-4 md:mb-10 flex-row-reverse">
-                      <div className="text-right">
-                        <span className="text-[9px] md:text-[10px] font-black text-brand-red uppercase tracking-widest block mb-1">رقم الطلب</span>
-                        <h3 className="text-xl md:text-3xl font-black italic tracking-tighter">#{o.id.slice(-4).toUpperCase()}</h3>
-                      </div>
-                      <div className={`px-3 py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border ${o.status === 'DONE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-orange/10 text-brand-orange border-brand-orange/20 animate-pulse'}`}>
-                        {o.status === 'DONE' ? 'مكتمل' : 'قيد التحضير'}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 md:space-y-6 mb-4 md:mb-10 border-y border-white/5 py-4 md:py-8">
-                      {o.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center flex-row-reverse">
-                          <span className="text-xs md:text-sm font-black text-white">{item.name}</span>
-                          <span className="bg-white/5 px-2 py-1 rounded-lg text-xs font-black text-white">×{item.quantity}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-between items-center mb-4 md:mb-10 flex-row-reverse">
-                      <span className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">المجموع</span>
-                      <span className="text-lg md:text-2xl font-black text-brand-orange italic tracking-tighter">{o.total.toLocaleString()} د.ع</span>
-                    </div>
-
-                    <div className="flex gap-3 mt-auto">
-                      {o.status !== 'DONE' && (
-                        <button
-                          onClick={() => handleStatusUpdate(o.id, 'DONE')}
-                          className="flex-1 py-3.5 md:py-5 bg-green-500 text-white rounded-2xl md:rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-500/30 active:scale-95 transition-all"
-                        >
-                          إنهاء الطلب
-                        </button>
-                      )}
-                      <a
-                        href={`https://wa.me/${formatTel(o.customerPhone)}?text=${encodeURIComponent(`مرحباً! طلبك رقم #${o.id.slice(-4).toUpperCase()} جاهز الآن من تاباسكو الشام. المجموع: ${o.total.toLocaleString()} د.ع`)}`}
-                        target="_blank"
-                        className="w-12 h-12 md:w-16 md:h-16 bg-white/5 rounded-2xl md:rounded-3xl flex items-center justify-center border border-white/5 hover:bg-white/10 transition-all active:scale-95 text-xl"
-                      >💬</a>
-                    </div>
-                  </div>
+                  <OrderCard 
+                    key={o.id} 
+                    order={o} 
+                    handleStatusUpdate={handleStatusUpdate} 
+                    formatTel={formatTel} 
+                  />
                 ))
               )}
             </div>
@@ -433,28 +532,22 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                   e.preventDefault(); 
                   if (newCatName) { await createCategory(newCatName); setNewCatName(''); } 
                 }} className="relative mb-10">
-                   <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="قسم جديد..." className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-5 text-sm md:text-xs font-black focus:border-brand-red/40 outline-none text-right" />
-                   <button type="submit" className="absolute left-2 top-2 bg-brand-red w-11 h-11 rounded-xl flex items-center justify-center shadow-lg active:scale-90"><Icons.Plus /></button>
+                   <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="قسم جديد..." className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-5 text-sm md:text-xs font-black focus:border-brand-green/40 outline-none text-right" />
+                   <button type="submit" className="absolute left-2 top-2 bg-brand-green w-11 h-11 rounded-xl flex items-center justify-center shadow-lg active:scale-90"><Icons.Plus /></button>
                 </form>
 
                 <div className="space-y-3">
                    {initialCategories.map((c: any) => (
-                      <div key={c.id} className="flex justify-between items-center bg-white/[0.02] p-5 rounded-2xl border border-white/[0.02] group/cat flex-row-reverse">
-                         {editingCatId === c.id ? (
-                           <div className="flex gap-2 w-full flex-row-reverse">
-                              <input autoFocus type="text" value={editCatName} onChange={e => setEditCatName(e.target.value)} className="flex-1 bg-white/10 border border-brand-red/30 rounded-xl px-4 text-xs font-black outline-none" />
-                              <button onClick={async () => { await updateCategory(c.id, editCatName); setEditingCatId(null); }} className="bg-brand-red p-2 rounded-lg text-white"><Icons.Check /></button>
-                           </div>
-                         ) : (
-                           <>
-                             <span className="font-black text-xs text-gray-300">{c.name}</span>
-                             <div className="flex gap-1.5 opacity-0 group-hover/cat:opacity-100 transition-all flex-row-reverse">
-                                <button onClick={() => { setEditingCatId(c.id); setEditCatName(c.name); }} className="p-2 h-9 w-9 rounded-xl bg-white/5 text-gray-500 hover:text-white"><Icons.Edit /></button>
-                                <button onClick={() => setConfirmModal({show: true, type: 'category', id: c.id})} className="p-2 h-9 w-9 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"><Icons.Trash /></button>
-                             </div>
-                           </>
-                         )}
-                      </div>
+                      <CategoryItem 
+                        key={c.id} 
+                        category={c} 
+                        editingCatId={editingCatId} 
+                        setEditingCatId={setEditingCatId} 
+                        editCatName={editCatName} 
+                        setEditCatName={setEditCatName} 
+                        updateCategory={updateCategory} 
+                        setConfirmModal={setConfirmModal} 
+                      />
                    ))}
                 </div>
               </div>
@@ -466,7 +559,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
               {/* Product Form Panel */}
               <div ref={editFormRef} className="glass bg-white/[0.01] p-4 md:p-12 rounded-2xl md:rounded-[4rem] border border-white/5">
                 <h2 className="font-black text-lg md:text-2xl mb-5 md:mb-10 flex items-center gap-3 flex-row-reverse">
-                  <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-brand-red shadow-[0_0_15px_#ff3b3b]"></div>
+                  <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-brand-green shadow-[0_0_15px_#ff3b3b]"></div>
                   {editingProdId ? 'تعديل الصنف' : 'إضافة صنف جديد'}
                 </h2>
                 
@@ -490,7 +583,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">صورة الوجبة</label>
                         <div className="flex gap-2 flex-row-reverse">
-                           <input type="text" value={editingProdId ? editProdData.imageUrl : newProdImage} onChange={e => editingProdId ? setEditProdData({...editProdData, imageUrl: e.target.value}) : setNewProdImage(e.target.value)} placeholder="رابط خارجي..." className="flex-1 bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-red/40 outline-none text-right" />
+                           <input type="text" value={editingProdId ? editProdData.imageUrl : newProdImage} onChange={e => editingProdId ? setEditProdData({...editProdData, imageUrl: e.target.value}) : setNewProdImage(e.target.value)} placeholder="رابط خارجي..." className="flex-1 bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-green/40 outline-none text-right" />
                            <button 
                              type="button" 
                              disabled={isUploading}
@@ -527,7 +620,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                                     }}
                                     className={`px-8 py-5 text-sm font-black cursor-pointer transition-all ${
                                       (editingProdId ? editProdData.categoryId : newProdCat) === c.id 
-                                      ? 'bg-brand-red text-white' 
+                                      ? 'bg-brand-green text-white' 
                                       : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                     }`}
                                   >
@@ -542,17 +635,17 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">اسم الوجبة</label>
-                        <input type="text" value={editingProdId ? editProdData.name : newProdName} onChange={e => editingProdId ? setEditProdData({...editProdData, name: e.target.value}) : setNewProdName(e.target.value)} placeholder="..." className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-red/40 outline-none text-right" required />
+                        <input type="text" value={editingProdId ? editProdData.name : newProdName} onChange={e => editingProdId ? setEditProdData({...editProdData, name: e.target.value}) : setNewProdName(e.target.value)} placeholder="..." className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-green/40 outline-none text-right" required />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">سعر الوجبة</label>
-                        <input type="number" value={editingProdId ? editProdData.price : newProdPrice} onChange={e => editingProdId ? setEditProdData({...editProdData, price: Number(e.target.value)}) : setNewProdPrice(e.target.value)} placeholder="..." className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-red/40 outline-none text-right" required />
+                        <input type="number" value={editingProdId ? editProdData.price : newProdPrice} onChange={e => editingProdId ? setEditProdData({...editProdData, price: Number(e.target.value)}) : setNewProdPrice(e.target.value)} placeholder="..." className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-green/40 outline-none text-right" required />
                       </div>
                    </div>
                    <div className="space-y-4">
                       <div className="space-y-2">
                          <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mr-4">وصف المكونات</label>
-                         <input type="text" value={editingProdId ? editProdData.description : newProdDesc} onChange={e => editingProdId ? setEditProdData({...editProdData, description: e.target.value}) : setNewProdDesc(e.target.value)} placeholder="..." className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-red/40 outline-none text-right" />
+                         <input type="text" value={editingProdId ? editProdData.description : newProdDesc} onChange={e => editingProdId ? setEditProdData({...editProdData, description: e.target.value}) : setNewProdDesc(e.target.value)} placeholder="..." className="w-full bg-white/[0.03] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:border-brand-green/40 outline-none text-right" />
                       </div>
                       
                       <div 
@@ -560,16 +653,16 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                         className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] cursor-pointer hover:bg-white/5 transition-all select-none flex-row-reverse"
                       >
                          <div className="flex items-center gap-4 flex-row-reverse">
-                            <div className={`w-3 h-3 rounded-full ${(editingProdId ? editProdData.isAvailable : newProdAvailable) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            <div className={`w-3 h-3 rounded-full ${(editingProdId ? editProdData.isAvailable : newProdAvailable) ? 'bg-green-500' : 'bg-brand-green'}`}></div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">حالة التوفر:</span>
                          </div>
-                         <span className={`text-[10px] font-black uppercase ${(editingProdId ? editProdData.isAvailable : newProdAvailable) ? 'text-green-500' : 'text-red-500'}`}>
+                         <span className={`text-[10px] font-black uppercase ${(editingProdId ? editProdData.isAvailable : newProdAvailable) ? 'text-green-500' : 'text-brand-green'}`}>
                             {(editingProdId ? editProdData.isAvailable : newProdAvailable) ? 'متوفر للطلب' : 'نفدت الكمية'}
                          </span>
                       </div>
                    </div>
                    <div className="pt-4 flex gap-3 flex-row-reverse">
-                       <button type="submit" className="flex-[2] py-4 md:py-5 bg-brand-red text-white rounded-2xl md:rounded-[1.8rem] font-black text-sm shadow-xl shadow-brand-red/30 active:scale-[0.98] transition-all">
+                       <button type="submit" className="flex-[2] py-4 md:py-5 bg-brand-green text-white rounded-2xl md:rounded-[1.8rem] font-black text-sm shadow-xl shadow-brand-green/30 active:scale-[0.98] transition-all">
                         {editingProdId ? 'حفظ التعديلات' : 'إضافة للمنيو الآن'}
                       </button>
                        {editingProdId && <button type="button" onClick={() => setEditingProdId(null)} className="flex-1 py-4 md:py-5 bg-white/5 rounded-2xl md:rounded-[1.8rem] font-black text-sm border border-white/5 hover:bg-white/10 transition-all text-white">إلغاء</button>}
@@ -587,40 +680,15 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                 <div className="space-y-2 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 max-h-[1000px] overflow-y-auto custom-scrollbar">
                   {initialCategories.map((c: any) =>
                     c.products.map((p: any) => (
-                      <div
-                        key={p.id}
-                        className="flex flex-row-reverse justify-between items-center bg-white/[0.02] p-3 md:p-4 rounded-xl md:rounded-[2rem] border border-white/5 hover:border-brand-red/20 transition-all gap-3"
-                        style={{ contentVisibility: 'auto', containIntrinsicSize: '72px' }}
-                      >
-                        <div className="flex items-center gap-3 flex-row-reverse flex-1 min-w-0">
-                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl overflow-hidden border border-white/10 shrink-0">
-                            <img src={p.imageUrl || "/burger-placeholder.png"} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="text-right flex-1 min-w-0">
-                            <h4 className="text-xs md:text-sm font-black text-white truncate">{p.name}</h4>
-                            <div className="flex items-center gap-1.5 mt-1 flex-row-reverse">
-                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${p.isAvailable ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                {p.isAvailable ? 'متوفر' : 'نفد'}
-                              </span>
-                              <span className="text-[9px] font-bold text-brand-orange">{p.price.toLocaleString()} د.ع</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1.5 shrink-0">
-                          <button
-                            onClick={() => { setEditingProdId(p.id); setEditProdData({ ...p, categoryId: c.id }); setTimeout(() => editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }}
-                            className="p-2.5 bg-white/5 text-gray-500 rounded-xl hover:text-white active:scale-90 transition-all border border-white/5"
-                          >
-                            <Icons.Edit />
-                          </button>
-                          <button
-                            onClick={() => setConfirmModal({show: true, type: 'product', id: p.id})}
-                            className="p-2.5 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white active:scale-90 transition-all border border-red-500/20"
-                          >
-                            <Icons.Trash />
-                          </button>
-                        </div>
-                      </div>
+                      <ProductItem 
+                        key={p.id} 
+                        product={p} 
+                        categoryId={c.id} 
+                        setEditingProdId={setEditingProdId} 
+                        setEditProdData={setEditProdData} 
+                        editFormRef={editFormRef} 
+                        setConfirmModal={setConfirmModal} 
+                      />
                     ))
                   )}
                 </div>
@@ -632,7 +700,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         {activeTab === "settings" && (
           <div className="max-w-4xl mx-auto animate-fade-in text-right">
              <div className="glass bg-white/[0.01] p-8 md:p-16 rounded-[4rem] border-2 border-white/5 relative overflow-hidden group/card shadow-2xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-red/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover/card:bg-brand-red/10 transition-colors duration-1000"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover/card:bg-brand-green/10 transition-colors duration-1000"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-white/5 pb-10">
                    <div>
@@ -640,7 +708,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                       <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] opacity-40">Store Management & Operational Hours</p>
                    </div>
                    <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-[2.5rem] border border-white/5 shadow-inner">
-                      <div className={`w-3 h-3 rounded-full ${isOpen ? 'bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-brand-red shadow-[0_0_15px_rgba(239,68,68,0.5)]'}`}></div>
+                      <div className={`w-3 h-3 rounded-full ${isOpen ? 'bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-brand-green shadow-[0_0_15px_rgba(239,68,68,0.5)]'}`}></div>
                       <span className="text-xs font-black text-white/60 uppercase tracking-widest">{isOpen ? 'المتجر مفتوح الآن' : 'المتجر مغلق حالياً'}</span>
                    </div>
                 </div>
@@ -673,12 +741,12 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                              }}
                              className={`relative group p-6 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-700 text-center flex flex-col items-center gap-1 overflow-hidden active:scale-95 shadow-xl ${
                                openDays.includes(day.id) 
-                               ? 'bg-gradient-to-br from-brand-red to-brand-orange border-transparent text-white scale-[1.05] z-10' 
+                               ? 'bg-gradient-to-br from-brand-green to-brand-yellow border-transparent text-white scale-[1.05] z-10' 
                                : 'bg-white/[0.02] border-white/5 text-gray-500 hover:bg-white/[0.05] hover:border-white/10'
                              }`}
                            >
                               <span className={`text-sm md:text-base font-black whitespace-nowrap transition-colors ${openDays.includes(day.id) ? 'text-white' : 'group-hover:text-white'}`}>{day.name}</span>
-                              <span className={`text-[8px] md:text-[9px] font-black tracking-[0.2em] uppercase opacity-40 transition-colors ${openDays.includes(day.id) ? 'text-white/60' : 'group-hover:text-brand-orange'}`}>{day.en}</span>
+                              <span className={`text-[8px] md:text-[9px] font-black tracking-[0.2em] uppercase opacity-40 transition-colors ${openDays.includes(day.id) ? 'text-white/60' : 'group-hover:text-brand-yellow'}`}>{day.en}</span>
                               <div className={`absolute bottom-2 w-1 h-1 rounded-full transition-all duration-700 ${openDays.includes(day.id) ? 'bg-white scale-100 opacity-100' : 'bg-white/10 scale-0 opacity-0'}`}></div>
                            </div>
                          ))}
@@ -690,10 +758,10 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                       <div className="space-y-6 group/time">
                          <div className="flex justify-between items-end px-6">
                             <div className="flex items-center gap-3">
-                               <div className="w-2.5 h-2.5 rounded-full bg-brand-orange shadow-lg shadow-brand-orange/40 group-hover/time:scale-125 transition-transform"></div>
+                               <div className="w-2.5 h-2.5 rounded-full bg-brand-yellow shadow-lg shadow-brand-yellow/40 group-hover/time:scale-125 transition-transform"></div>
                                <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em] leading-none">وقت الافتتاح</label>
                             </div>
-                            <span className="text-[11px] font-black text-brand-orange uppercase italic tracking-[0.15em] animate-pulse">{format12h(openTime)}</span>
+                            <span className="text-[11px] font-black text-brand-yellow uppercase italic tracking-[0.15em] animate-pulse">{format12h(openTime)}</span>
                          </div>
                          <div className="relative">
                             <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-20 group-hover/time:opacity-60 transition-all duration-500 group-hover/time:scale-110">
@@ -703,17 +771,17 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                               type="time" 
                               value={openTime} 
                               onChange={e => setOpenTime(e.target.value)}
-                              className="w-full bg-white/[0.02] border-2 border-white/5 rounded-[2.5rem] px-10 py-7 text-3xl font-black focus:border-brand-orange/40 focus:bg-white/[0.05] outline-none text-right [color-scheme:dark] transition-all duration-500 shadow-inner group-hover/time:border-white/10"
+                              className="w-full bg-white/[0.02] border-2 border-white/5 rounded-[2.5rem] px-10 py-7 text-3xl font-black focus:border-brand-yellow/40 focus:bg-white/[0.05] outline-none text-right [color-scheme:dark] transition-all duration-500 shadow-inner group-hover/time:border-white/10"
                             />
                          </div>
                       </div>
                       <div className="space-y-6 group/time">
                          <div className="flex justify-between items-end px-6">
                             <div className="flex items-center gap-3">
-                               <div className="w-2.5 h-2.5 rounded-full bg-brand-red shadow-lg shadow-brand-red/40 group-hover/time:scale-125 transition-transform animate-pulse"></div>
+                               <div className="w-2.5 h-2.5 rounded-full bg-brand-green shadow-lg shadow-brand-green/40 group-hover/time:scale-125 transition-transform animate-pulse"></div>
                                <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em] leading-none">وقت الإغلاق</label>
                             </div>
-                            <span className="text-[11px] font-black text-brand-red uppercase italic tracking-[0.15em] animate-pulse">{format12h(closeTime)}</span>
+                            <span className="text-[11px] font-black text-brand-green uppercase italic tracking-[0.15em] animate-pulse">{format12h(closeTime)}</span>
                          </div>
                          <div className="relative">
                             <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-20 group-hover/time:opacity-60 transition-all duration-500 group-hover/time:scale-110">
@@ -723,7 +791,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                               type="time" 
                               value={closeTime} 
                               onChange={e => setCloseTime(e.target.value)}
-                              className="w-full bg-white/[0.02] border-2 border-white/5 rounded-[2.5rem] px-10 py-7 text-3xl font-black focus:border-brand-red/40 focus:bg-white/[0.05] outline-none text-right [color-scheme:dark] transition-all duration-500 shadow-inner group-hover/time:border-white/10"
+                              className="w-full bg-white/[0.02] border-2 border-white/5 rounded-[2.5rem] px-10 py-7 text-3xl font-black focus:border-brand-green/40 focus:bg-white/[0.05] outline-none text-right [color-scheme:dark] transition-all duration-500 shadow-inner group-hover/time:border-white/10"
                             />
                          </div>
                       </div>
@@ -735,7 +803,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                        disabled={isSavingSettings}
                        className="group relative w-full py-8 bg-white text-black rounded-[2.5rem] font-black text-xl hover:text-white transition-all duration-700 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] active:scale-[0.98] disabled:opacity-50"
                      >
-                       <div className="absolute inset-0 bg-gradient-to-r from-brand-red via-brand-orange to-brand-red bg-[length:200%_auto] opacity-0 group-hover:opacity-100 transition-all duration-700 animate-gradient-x"></div>
+                       <div className="absolute inset-0 bg-gradient-to-r from-brand-green via-brand-yellow to-brand-green bg-[length:200%_auto] opacity-0 group-hover:opacity-100 transition-all duration-700 animate-gradient-x"></div>
                        <span className="relative z-10 uppercase tracking-[0.4em] italic flex items-center justify-center gap-4">
                          {isSavingSettings ? (
                             <>
@@ -766,17 +834,17 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                <div className="space-y-10 flex flex-col items-center md:items-end">
                   <div className="flex flex-col items-center md:items-end gap-4">
                      <div className="w-20 h-20 rounded-3xl overflow-hidden border border-white/10 mb-2 shadow-2xl skew-y-3">
-                        <img src="/55555555555_page-0001.jpg" alt="Logo" className="w-full h-full object-cover" />
+                        <img src="/land.png" alt="Logo" className="w-full h-full object-cover" />
                      </div>
-                     <h3 className="text-4xl font-black text-white italic tracking-tighter leading-none italic animate-gradient-x bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white">TABASCO AL-SHAM</h3>
+                     <h3 className="text-4xl font-black text-white italic tracking-tighter leading-none italic animate-gradient-x bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white">SHAWARMA NAZO LAND</h3>
                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] max-w-xs leading-relaxed text-center md:text-right">نقدم لكم أفخر النكهات الشامية الأصيلة والوصفات الأسطورية منذ {new Date().getFullYear()}</p>
                   </div>
                   
                   <div className="flex gap-5">
-                     <a href="https://www.facebook.com/share/1CgeTMMTYZ/" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-red/40 hover:bg-brand-red/10 transition-all duration-700 group active:scale-90 shadow-lg">
+                     <a href="https://www.facebook.com/share/1CgeTMMTYZ/" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-green/40 hover:bg-brand-green/10 transition-all duration-700 group active:scale-90 shadow-lg">
                         <svg className="w-7 h-7 text-gray-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                      </a>
-                     <a href="https://www.instagram.com/tab_asco1?igsh=ZXprcTdqNms2dWlz" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-red/40 hover:bg-brand-red/10 transition-all duration-700 group active:scale-90 shadow-lg">
+                     <a href="https://www.instagram.com/tab_asco1?igsh=ZXprcTdqNms2dWlz" target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-[2rem] glass bg-white/5 flex items-center justify-center border border-white/5 hover:border-brand-green/40 hover:bg-brand-green/10 transition-all duration-700 group active:scale-90 shadow-lg">
                         <svg className="w-7 h-7 text-gray-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.669-.072-4.948-.2-4.351-2.609-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                      </a>
                   </div>
@@ -785,20 +853,20 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                {/* Info & Location */}
                <div className="flex flex-col items-center md:items-start gap-12 text-center md:text-left">
                   <div className="space-y-6">
-                     <span className="text-[10px] font-black text-brand-red uppercase tracking-[0.5em] block">موقعنا</span>
+                     <span className="text-[10px] font-black text-brand-green uppercase tracking-[0.5em] block">موقعنا</span>
                      <div className="space-y-2">
-                        <span className="block text-white font-black text-2xl md:text-4xl italic tracking-tight">بغداد، بوب الشام</span>
+                        <span className="block text-white font-black text-2xl md:text-4xl italic tracking-tight">الموصل، حي المزارع</span>
                         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 mt-2">
                            <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/5 text-gray-400 text-[10px] md:text-xs font-black tracking-widest uppercase">
                               {format12h(settings?.openTime || "14:30")} - {format12h(settings?.closeTime || "01:30")}
                            </span>
-                           <span className="px-4 py-1.5 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-[10px] md:text-xs font-black tracking-widest uppercase">
+                           <span className="px-4 py-1.5 rounded-full bg-brand-yellow/10 border border-brand-yellow/20 text-brand-yellow text-[10px] md:text-xs font-black tracking-widest uppercase">
                               {(settings?.openDays?.split(',')?.length === 7) ? 'طوال أيام الأسبوع' : 'أيام العمل المحددة'}
                            </span>
                         </div>
                      </div>
-                     <div className="flex items-center justify-center md:justify-start gap-4 text-brand-orange scale-110 md:scale-100 origin-right">
-                        <div className="w-2 h-2 rounded-full bg-brand-orange animate-ping"></div>
+                     <div className="flex items-center justify-center md:justify-start gap-4 text-brand-yellow scale-110 md:scale-100 origin-right">
+                        <div className="w-2 h-2 rounded-full bg-brand-yellow animate-ping"></div>
                         <span className="text-[10px] font-black uppercase tracking-[0.3em]">فخر النكهة الشامية</span>
                      </div>
                   </div>
@@ -808,14 +876,14 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
             {/* COPYRIGHT BAR */}
             <div className="mt-32 pt-10 border-t border-white/5 flex flex-col md:flex-row-reverse justify-between items-center gap-10">
                <div className="flex flex-col items-center md:items-end gap-2">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">© {new Date().getFullYear()} TABASCO AL-SHAM • ALL RIGHTS RESERVED</p>
+                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">© {new Date().getFullYear()} SHAWARMA NAZO LAND • ALL RIGHTS RESERVED</p>
                   <p className="text-[8px] font-bold text-gray-700 uppercase tracking-widest">Premium Restaurant Experience</p>
                </div>
                
                <a href="https://me.nexadigital.dev" target="_blank" rel="noopener noreferrer" className="group">
-                  <div className="flex items-center gap-5 bg-transparent px-8 py-3.5 rounded-[2rem] border border-white/5 hover:border-brand-red/30 hover:bg-white/[0.05] transition-all duration-700 shadow-2xl active:scale-95">
-                     <span className="text-[10px] font-black text-white/10 group-hover:text-brand-red/40 transition-colors uppercase tracking-[0.3em] font-cairo">Handcrafted by</span>
-                     <div className="h-4 w-[1px] bg-white/10 group-hover:bg-brand-red/20 transition-colors"></div>
+                  <div className="flex items-center gap-5 bg-transparent px-8 py-3.5 rounded-[2rem] border border-white/5 hover:border-brand-green/30 hover:bg-white/[0.05] transition-all duration-700 shadow-2xl active:scale-95">
+                     <span className="text-[10px] font-black text-white/10 group-hover:text-brand-green/40 transition-colors uppercase tracking-[0.3em] font-cairo">Handcrafted by</span>
+                     <div className="h-4 w-[1px] bg-white/10 group-hover:bg-brand-green/20 transition-colors"></div>
                      <span className="text-[11px] font-black text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/60 transition-all tracking-[0.15em]">NEXA DIGITAL</span>
                   </div>
                </a>
@@ -825,3 +893,4 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
     </div>
   );
 }
+
