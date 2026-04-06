@@ -95,7 +95,7 @@ const OrderCard = memo(({ order, handleStatusUpdate, formatTel }: any) => (
   </div>
 ));
 
-const CategoryItem = memo(({ category, editingCatId, setEditingCatId, editCatName, setEditCatName, updateCategory, setConfirmModal }: any) => (
+const CategoryItem = memo(({ category, editingCatId, setEditingCatId, editCatName, setEditCatName, updateCategory, setConfirmModal, setNotification }: any) => (
   <div className="flex justify-between items-center bg-white/[0.02] p-5 rounded-2xl border border-white/[0.02] group/cat flex-row-reverse">
     {editingCatId === category.id ? (
       <div className="flex gap-2 w-full flex-row-reverse">
@@ -107,7 +107,11 @@ const CategoryItem = memo(({ category, editingCatId, setEditingCatId, editCatNam
           className="flex-1 bg-white/10 border border-brand-green/30 rounded-xl px-4 text-xs font-black outline-none" 
         />
         <button 
-          onClick={async () => { await updateCategory(category.id, editCatName); setEditingCatId(null); }} 
+          onClick={async () => { 
+            await updateCategory(category.id, editCatName); 
+            setEditingCatId(null); 
+            setNotification({ show: true, message: "تم تحديث اسم القسم بنجاح ✅", type: 'success' });
+          }} 
           className="bg-brand-green p-2 rounded-lg text-white"
         >
           <Icons.Check />
@@ -135,7 +139,7 @@ const CategoryItem = memo(({ category, editingCatId, setEditingCatId, editCatNam
   </div>
 ));
 
-const ProductItem = memo(({ product, categoryId, setEditingProdId, setEditProdData, editFormRef, setConfirmModal }: any) => (
+const ProductItem = memo(({ product, categoryId, setEditingProdId, setEditProdData, editFormRef, setConfirmModal, setNotification }: any) => (
   <div
     className="flex flex-row-reverse justify-between items-center bg-white/[0.02] p-3 md:p-4 rounded-xl md:rounded-[2rem] border border-white/5 hover:border-brand-green/20 transition-all gap-3"
     style={{ contentVisibility: 'auto', containIntrinsicSize: '72px' }}
@@ -186,6 +190,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("orders");
   const [confirmModal, setConfirmModal] = useState<{show: boolean, type: 'category' | 'product', id: string} | null>(null);
+  const [notification, setNotification] = useState<{show: boolean, message: string, type: 'success' | 'error'} | null>(null);
   const [localLastOpenedAt, setLocalLastOpenedAt] = useState(lastOpenedAt);
   const [isPending, startTransition] = useTransition();
 
@@ -233,10 +238,16 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
 
   const handleConfirm = useCallback(async () => {
     if (!confirmModal) return;
-    if (confirmModal.type === 'category') await deleteCategory(confirmModal.id);
+    const type = confirmModal.type;
+    if (type === 'category') await deleteCategory(confirmModal.id);
     else await deleteProduct(confirmModal.id);
     setConfirmModal(null);
-  }, [confirmModal]);
+    setNotification({ 
+      show: true, 
+      message: type === 'category' ? "تم حذف القسم بنجاح 🗑️" : "تم حذف الوجبة بنجاح 🗑️", 
+      type: 'success' 
+    });
+  }, [confirmModal, deleteCategory, deleteProduct]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -244,7 +255,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
 
     // Validate if it's an image
     if (!file.type.startsWith('image/')) {
-       alert("يرجى اختيار صورة صالحة (JPG, PNG, WEBP)");
+       setNotification({ show: true, message: "يرجى اختيار صورة صالحة (JPG, PNG, WEBP) 🖼️", type: 'error' });
        return;
     }
 
@@ -293,10 +304,14 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         setNewProdImage(publicUrl);
       }
       
-      alert("تم رفع الصورة بنجاح! 🎉");
+      setNotification({ show: true, message: "تم رفع الصورة بنجاح! 🎉", type: 'success' });
     } catch (error: any) {
       console.error("Full Upload Error:", error);
-      alert(`⚠️ خطأ في الرفع: ${error.message}\n\nنصيحة: تأكد من أن الـ Bucket في Supabase باسم 'products' وأنه Public.`);
+      setNotification({ 
+        show: true, 
+        message: `⚠️ خطأ في الرفع: ${error.message}\n\nنصيحة: تأكد من أن الـ Bucket في Supabase باسم 'products' وأنه Public.`, 
+        type: 'error' 
+      });
     } finally {
       setIsUploading(false);
       // Reset input so the same file can be chose again
@@ -341,7 +356,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
         <form onSubmit={(e) => {
           e.preventDefault();
           if (password === "admin123") setIsAuthenticated(true);
-          else alert("رمز مرور خاطئ!");
+          else setNotification({ show: true, message: "رمز مرور خاطئ! 🔒", type: 'error' });
         }} className="glass bg-white/[0.01] p-12 rounded-[4rem] w-full max-w-md shadow-2xl border border-white/5 relative z-10 text-center animate-fade-in">
           <div className="mb-10 group relative">
             {/* Ultra-Smooth Radiant Container */}
@@ -397,6 +412,30 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
 
   return (
     <div className="min-h-screen bg-[#050505] text-white pb-32 font-cairo text-right" dir="rtl">
+      {/* Custom Notification Modal */}
+      {notification && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 animate-fade-in">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setNotification(null)} />
+          <div className="glass bg-[#0f0f10] p-8 md:p-12 rounded-[3.5rem] w-full max-w-md relative z-10 border border-white/10 text-center shadow-3xl transform transition-all duration-500 scale-100">
+             <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl ${notification.type === 'success' ? 'bg-brand-green/20 text-brand-green shadow-brand-green/20' : 'bg-brand-yellow/20 text-brand-yellow shadow-brand-yellow/20'}`}>
+                {notification.type === 'success' ? <Icons.Check /> : <Icons.Settings />}
+              </div>
+             <h3 className="text-2xl font-black mb-4 italic tracking-tight">{notification.type === 'success' ? 'تمت العملية بنجاح' : 'تنبيه من النظام'}</h3>
+             <p className="text-xs md:text-sm text-gray-500 font-bold leading-relaxed mb-10 whitespace-pre-line">
+                {notification.message}
+             </p>
+             <button 
+               onClick={() => setNotification(null)} 
+               className={`w-full py-5 rounded-[1.8rem] font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-xl ${
+                 notification.type === 'success' ? 'bg-brand-green text-white shadow-brand-green/40' : 'bg-brand-yellow text-black shadow-brand-yellow/40'
+               }`}
+             >
+                حسناً، استمر
+             </button>
+          </div>
+        </div>
+      )}
+
       {/* Custom Confirm Modal */}
       {confirmModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-fade-in">
@@ -556,7 +595,11 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                 
                 <form onSubmit={async (e) => { 
                   e.preventDefault(); 
-                  if (newCatName) { await createCategory(newCatName); setNewCatName(''); } 
+                  if (newCatName) { 
+                    await createCategory(newCatName); 
+                    setNewCatName(''); 
+                    setNotification({ show: true, message: "تمت إضافة القسم الجديد بنجاح ✨", type: 'success' });
+                  } 
                 }} className="relative mb-10">
                    <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="قسم جديد..." className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-5 text-sm md:text-xs font-black focus:border-brand-green/40 outline-none text-right" />
                    <button type="submit" className="absolute left-2 top-2 bg-brand-green w-11 h-11 rounded-xl flex items-center justify-center shadow-lg active:scale-90"><Icons.Plus /></button>
@@ -573,6 +616,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                         setEditCatName={setEditCatName} 
                         updateCategory={updateCategory} 
                         setConfirmModal={setConfirmModal} 
+                        setNotification={setNotification}
                       />
                    ))}
                 </div>
@@ -600,8 +644,15 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                     isAvailable: editingProdId ? editProdData.isAvailable : newProdAvailable
                   };
 
-                  if (editingProdId) { await updateProduct(editingProdId, pData); setEditingProdId(null); } 
-                  else { await createProduct(pData); }
+                  if (editingProdId) { 
+                    await updateProduct(editingProdId, pData); 
+                    setEditingProdId(null); 
+                    setNotification({ show: true, message: "تم تحديث بيانات الوجبة بنجاح ✅", type: 'success' });
+                  } 
+                  else { 
+                    await createProduct(pData); 
+                    setNotification({ show: true, message: "تمت إضافة الوجبة الجديدة بنجاح ✨", type: 'success' });
+                  }
                   
                   setNewProdName(''); setNewProdPrice(''); setNewProdDesc(''); setNewProdImage(''); setNewProdAvailable(true);
                 }} className="space-y-6">
@@ -714,6 +765,7 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
                         setEditProdData={setEditProdData} 
                         editFormRef={editFormRef} 
                         setConfirmModal={setConfirmModal} 
+                        setNotification={setNotification}
                       />
                     ))
                   )}
