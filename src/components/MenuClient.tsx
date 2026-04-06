@@ -122,7 +122,13 @@ export default function MenuClient({ categories, settings }: { categories: Categ
 
   const displayedProducts = useMemo(() => {
     if (activeCategoryId === "all") {
-      return sortedCategories.flatMap(cat => cat.products);
+      const specialCategory = sortedCategories.find(c => c.name === "الجديد والقسم الخاص");
+      const regularCategories = sortedCategories.filter(c => c.name !== "الجديد والقسم الخاص");
+      
+      return [
+        ...(specialCategory ? specialCategory.products : []),
+        ...regularCategories.flatMap(cat => cat.products)
+      ];
     }
     return sortedCategories.find(c => c.id === activeCategoryId)?.products || [];
   }, [activeCategoryId, sortedCategories]);
