@@ -242,39 +242,65 @@ export default function AdminDashboard({ initialCategories, initialOrders, isOpe
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate if it's an image
+    if (!file.type.startsWith('image/')) {
+       alert("يرجى اختيار صورة صالحة (JPG, PNG, WEBP)");
+       return;
+    }
+
     setIsUploading(true);
     
     try {
       if (!supabase) {
-        throw new Error("لم يتم تكوين Supabase! يرجى إضافة NEXT_PUBLIC_SUPABASE_URL و NEXT_PUBLIC_SUPABASE_ANON_KEY إلى الإعدادات.");
+        throw new Error("لم يتم تكوين Supabase! يرجى إضافة NEXT_PUBLIC_SUPABASE_URL و NEXT_PUBLIC_SUPABASE_ANON_KEY إلى إعدادات Vercel.");
       }
+
       // 1. Create a unique filename
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop() || 'jpg';
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `product-images/${fileName}`;
+      
+      // We will try to upload to a folder named 'product-images' inside the bucket.
+      // THE BUCKET NAME should ideally be 'products' or 'images'. 
+      // Ensure the bucket is set to "Public" and has an INSERT policy for anon users.
+      const bucketName = 'products'; 
+      const filePath = `${fileName}`;
 
-      // 2. Upload to Supabase 'products' bucket
+      console.log(`Uploading to bucket: ${bucketName}, path: ${filePath}`);
+
+      // 2. Upload to Supabase bucket
       const { data, error } = await supabase.storage
-        .from('products')
-        .upload(filePath, file);
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Storage Error Details:", error);
+        throw new Error(error.message);
+      }
 
       // 3. Get the public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('products')
+        .from(bucketName)
         .getPublicUrl(filePath);
+
+      console.log("Success! Public URL:", publicUrl);
 
       if (editingProdId) {
         setEditProdData((prev: any) => ({ ...prev, imageUrl: publicUrl }));
       } else {
         setNewProdImage(publicUrl);
       }
+      
+      alert("تم رفع الصورة بنجاح! 🎉");
     } catch (error: any) {
-      console.error("Upload Error:", error);
-      alert("فشل رفع الصورة: " + (error.message || "تأكد من إعدادات Supabase Storage في نظام شاورما نازولاند"));
+      console.error("Full Upload Error:", error);
+      alert(`⚠️ خطأ في الرفع: ${error.message}\n\nنصيحة: تأكد من أن الـ Bucket في Supabase باسم 'products' وأنه Public.`);
     } finally {
       setIsUploading(false);
+      // Reset input so the same file can be chose again
+      if (e.target) e.target.value = '';
     }
   }, [editingProdId]);
 
