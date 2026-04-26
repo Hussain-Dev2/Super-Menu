@@ -1,158 +1,736 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Image from 'next/image'
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 
-type CartItem = {
-  product: any
-  quantity: number
-}
+const CheckoutModal = dynamic(() => import("./CheckoutModal"), {
+  ssr: false,
+  loading: () => null
+});
 
-export default function ClientMenu({ restaurant, categories, products }: { restaurant: any, categories: any[], products: any[] }) {
-  const [cart, setCart] = useState<CartItem[]>([])
-  const [activeCategory, setActiveCategory] = useState(categories[0]?.id || null)
+type Product = {
+  id: string;
+  title: string;
+  price: number;
+  description: string | null;
+  image_url: string | null;
+  is_available: boolean;
+  category_id: string;
+};
 
-  const addToCart = (product: any) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id)
+type Category = {
+  id: string;
+  name: string;
+  products: Product[];
+};
+
+type CartItem = { 
+  product: Product; 
+  quantity: number; 
+  selectedSize?: string;
+  selectedPrice?: number;
+};
+
+export default function ClientMenu({ restaurant, categories: rawCategories, products: rawProducts }: { restaurant: any, categories: any[], products: any[] }) {
+  // Map raw categories and products into the expected structure
+  const categories: Category[] = useMemo(() => {
+    return rawCategories.map(cat => ({
+      ...cat,
+      products: rawProducts.filter(p => p.category_id === cat.id)
+    }));
+  }, [rawCategories, rawProducts]);
+
+  const [activeCategoryId, setActiveCategoryId] = useState("all");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  // For now, in Super Menu we assume the store is always open or read from restaurant config
+  const [localIsOpen, setLocalIsOpen] = useState(true);
+  const [selectedSizes, setSelectedSizes] = useState<Record<string, { name: string; price: number }>>({});
+
+  const primary = restaurant.theme_config?.primary_color || '#00ca72';
+  const secondary = restaurant.theme_config?.secondary_color || '#ffffff';
+
+  const format12h = (time: string) => {
+    if (!time) return "";
+    try {
+       const [h, m] = time.split(':').map(Number);
+       const period = h >= 12 ? 'PM' : 'AM';
+       const hours = h % 12 || 12;
+       return `${hours}:${m.toString().padStart(2, '0')} ${period}`;
+    } catch {
+       return time;
+    }
+  };
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (Math.abs(currentScrollY - lastScrollY) < 10) return;
+      const isScrolled = currentScrollY > 80;
+      setScrolled(isScrolled);
+      lastScrollY = currentScrollY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      // Special section moved to the bottom
+      if (a.name === "الجديد والقسم الخاص") return 1;
+      if (b.name === "الجديد والقسم الخاص") return -1;
+      // Traditional sections follow
+      if (a.name === "الوجبات") return -1;
+      if (b.name === "الوجبات") return 1;
+      return 0;
+    });
+  }, [categories]);
+
+  const displayedProducts = useMemo(() => {
+    if (activeCategoryId === "all") {
+      const specialCategory = sortedCategories.find(c => c.name === "الجديد والقسم الخاص");
+      const regularCategories = sortedCategories.filter(c => c.name !== "الجديد والقسم الخاص");
+      
+      return [
+        ...(specialCategory ? specialCategory.products : []),
+        ...regularCategories.flatMap(cat => cat.products)
+      ];
+    }
+    return sortedCategories.find(c => c.id === activeCategoryId)?.products || [];
+  }, [activeCategoryId, sortedCategories]);
+
+  const activeCategoryName = useMemo(() => {
+    if (activeCategoryId === "all") return "الكل";
+    return sortedCategories.find(c => c.id === activeCategoryId)?.name || "";
+  }, [activeCategoryId, sortedCategories]);
+
+  const specialCategoryId = useMemo(() => {
+    return categories.find(c => c.name === "الجديد والقسم الخاص")?.id;
+  }, [categories]);
+
+  const parsePizzaSizes = (desc: string | null) => {
+    if (!desc?.includes("SIZES:")) return null;
+    try {
+      const parts = desc.split("SIZES:")[1].split(",");
+      return parts.map(p => {
+        const [name, price] = p.trim().split("-");
+        return { name, price: parseFloat(price) };
+      });
+    } catch (e) { return null; }
+  };
+
+  const getQuantity = (productId: string, sizeName?: string) => {
+    return cart.find((item) => 
+      item.product.id === productId && (!sizeName || item.selectedSize === sizeName)
+    )?.quantity || 0;
+  };
+
+  const addToCart = useCallback((product: Product, size?: { name: string; price: number }) => {
+    if (!localIsOpen) return;
+    setCart((prev) => {
+      const existing = prev.find((item) => 
+        item.product.id === product.id && (!size || item.selectedSize === size.name)
+      );
       if (existing) {
-        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
+        return prev.map((item) =>
+          (item.product.id === product.id && (!size || item.selectedSize === size.name)) 
+            ? { ...item, quantity: item.quantity + 1 } : item
+        );
       }
-      return [...prev, { product, quantity: 1 }]
-    })
-  }
+      return [...prev, { 
+        product, 
+        quantity: 1, 
+        selectedSize: size?.name, 
+        selectedPrice: size?.price 
+      }];
+    });
+  }, [localIsOpen]);
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId))
-  }
+  const removeFromCart = useCallback((productId: string, sizeName?: string) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => 
+        item.product.id === productId && (!sizeName || item.selectedSize === sizeName)
+      );
+      if (!existing) return prev;
+      if (existing.quantity === 1) {
+        return prev.filter((item) => 
+          !(item.product.id === productId && (!sizeName || item.selectedSize === sizeName))
+        );
+      }
+      return prev.map((item) =>
+        (item.product.id === productId && (!sizeName || item.selectedSize === sizeName)) 
+          ? { ...item, quantity: item.quantity - 1 } : item
+      );
+    });
+  }, []);
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) return removeFromCart(productId)
-    setCart(prev => prev.map(item => item.product.id === productId ? { ...item, quantity } : item))
-  }
-
-  const total = cart.reduce((sum, item) => sum + (Number(item.product.price) * item.quantity), 0)
-
-  const sendOrder = () => {
-    if (cart.length === 0) return
-
-    let text = `طلب جديد من مطعم ${restaurant.name}:\n`
-    cart.forEach(item => {
-      text += `• ${item.quantity} ${item.product.title} - ${(Number(item.product.price) * item.quantity).toLocaleString()} د.ع\n`
-    })
-    text += `\nالمجموع الكلي: ${total.toLocaleString()} د.ع\n`
-    text += `ملاحظات الزبون: [تترك فراغاً]`
-
-    const encodedText = encodeURIComponent(text)
-    const whatsappNumber = restaurant.whatsapp_number.replace(/\+/g, '').replace(/ /g, '')
-    const url = `https://wa.me/${whatsappNumber}?text=${encodedText}`
-    window.open(url, '_blank')
-  }
+  const totalItems = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+  const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + ((item.selectedPrice || item.product.price) * item.quantity), 0), [cart]);
 
   return (
-    <>
-      <header className="sticky top-0 z-50 bg-white shadow-sm" style={{ borderBottomColor: 'var(--color-primary)', borderBottomWidth: '4px' }}>
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          {restaurant.logo_url && (
-            <div className="relative w-16 h-16 rounded-full overflow-hidden border-2" style={{ borderColor: 'var(--color-primary)' }}>
-              <Image src={restaurant.logo_url} alt={restaurant.name} fill sizes="64px" priority className="object-cover" />
-            </div>
-          )}
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>{restaurant.name}</h1>
-        </div>
-        
-        {/* Category Nav */}
-        <div className="max-w-4xl mx-auto px-4 py-2 flex overflow-x-auto gap-2 no-scrollbar">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`whitespace-nowrap px-4 py-2 rounded-full font-medium transition-colors`}
-              style={{
-                backgroundColor: activeCategory === cat.id ? 'var(--color-primary)' : '#f3f4f6',
-                color: activeCategory === cat.id ? 'var(--color-secondary)' : '#374151'
-              }}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#050505] relative isolate font-cairo overflow-x-hidden text-right" dir="rtl">
+      {/* MAGICAL BACKGROUND LAYER */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[60rem] h-[60rem] rounded-full blur-[150px] opacity-40 animate-pulse" style={{ backgroundColor: `${primary}15` }}></div>
+        <div className="absolute bottom-[0%] right-[-10%] w-[50rem] h-[50rem] bg-yellow-500/5 rounded-full blur-[130px] opacity-30 animate-pulse"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')] opacity-[0.08] mix-blend-screen"></div>
+      </div>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8 pb-32">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {products.filter(p => p.category_id === activeCategory && p.is_available).map(product => (
-            <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col transition-transform hover:scale-[1.02]">
-              {product.image_url ? (
-                <div className="relative w-full h-48 bg-gray-100">
-                  <Image src={product.image_url} alt={product.title} fill className="object-cover" />
-                </div>
-              ) : (
-                <div className="relative w-full h-48 bg-gray-100 flex items-center justify-center">
-                  <span className="text-gray-400">No Image</span>
-                </div>
-              )}
-              <div className="p-4 flex flex-col flex-1">
-                <div className="flex justify-between items-start gap-2 mb-2">
-                  <h3 className="font-bold text-lg leading-tight text-gray-900">{product.title}</h3>
-                  <span className="font-bold whitespace-nowrap" style={{ color: 'var(--color-primary)' }}>
-                    {Number(product.price).toLocaleString()} د.ع
-                  </span>
-                </div>
-                {product.description && (
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
-                )}
-                
-                <div className="mt-auto pt-4 flex justify-center">
-                  {cart.find(c => c.product.id === product.id) ? (
-                    <div className="flex items-center gap-4 bg-gray-50 p-1 rounded-full border border-gray-200">
-                      <button 
-                        onClick={() => updateQuantity(product.id, cart.find(c => c.product.id === product.id)!.quantity - 1)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-700 font-bold"
-                      >-</button>
-                      <span className="font-medium w-4 text-center">{cart.find(c => c.product.id === product.id)!.quantity}</span>
-                      <button 
-                        onClick={() => addToCart(product)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full shadow-sm font-bold"
-                        style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-secondary)' }}
-                      >+</button>
-                    </div>
-                  ) : (
+      <header className="relative pt-20 pb-16 px-8 text-center overflow-hidden">
+         <div className="max-w-4xl mx-auto flex flex-col items-center">
+            <div className={`mb-8 px-5 py-2.5 rounded-full border flex items-center gap-3 transition-all duration-700 animate-fade-in ${localIsOpen ? 'bg-green-500/10 border-green-500/30 text-green-500 shadow-[0_0_20px_rgba(0,202,114,0.2)]' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+               <div className="relative">
+                  <span className={`w-2 h-2 rounded-full block ${localIsOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                  {localIsOpen && <span className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping opacity-75"></span>}
+               </div>
+               <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] italic">
+                  {localIsOpen ? 'OPEN NOW • WELCOME' : 'CLOSED NOW • SEE YOU SOON'}
+               </span>
+            </div>
+
+            <div className="relative group mb-10 transform hover:rotate-3 transition-transform duration-700">
+               <div className="absolute -inset-4 bg-gradient-to-r from-green-500 to-yellow-500 rounded-[3rem] blur-2xl opacity-10 group-hover:opacity-30 transition"></div>
+               <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-black flex items-center justify-center">
+                  <Image 
+                    src={restaurant.logo_url || '/final.jpeg'} 
+                    alt="Logo" 
+                    fill 
+                    sizes="128px"
+                    priority 
+                    className="object-cover scale-110" 
+                  />
+               </div>
+            </div>
+
+            <h1 className="text-4xl md:text-8xl font-black mb-4 tracking-tighter leading-none italic uppercase flex flex-col items-center">
+               <span style={{ color: primary, textShadow: `0 0 15px ${primary}50` }}>{restaurant.name.split(' ')[0]}</span>
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-white to-yellow-400 animate-gradient-x scale-90 md:scale-75 -mt-2 md:-mt-4">{restaurant.name.split(' ').slice(1).join(' ')}</span>
+            </h1>
+            
+            <p className="max-w-2xl mx-auto text-gray-400 text-xs md:text-base font-bold leading-relaxed opacity-70 px-4 mb-8">
+               استمتع بتجربة طعام استثنائية تجمع بين المذاق الشامي الأصيل وأجود المكونات، لتمنحك نكهة أسطورية لا تُنسى في كل لقمة.
+            </p>
+
+               <div className="mt-8 px-10 py-6 rounded-[3rem] bg-white/[0.04] border border-white/10 flex flex-col items-center gap-3 max-w-sm mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  <div className="flex items-center gap-2 mb-1">
+                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></div>
+                     <span className="text-gray-500 text-[9px] font-black uppercase tracking-[0.4em] opacity-80">أوقات العمل المعتمدة</span>
+                  </div>
+
+                  <div className="flex items-center gap-6 relative z-10">
+                     <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-2 mb-0.5" dir="ltr">
+                           <span className="text-white font-black text-2xl tracking-tighter italic transition-colors" style={{ ':hover': { color: primary } } as any}>
+                              {format12h("14:30")}
+                           </span>
+                           <span className="text-gray-600 font-black">-</span>
+                           <span className="text-white font-black text-2xl tracking-tighter italic hover:text-yellow-400 transition-colors">
+                              {format12h("01:30")}
+                           </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                           <svg className="w-2.5 h-2.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                           <span className="text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em]">Daily Schedule</span>
+                        </div>
+                     </div>
+                     
+                     <div className="w-[1px] h-12 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                     
+                     <div className="flex flex-col items-center">
+                        <span className="text-yellow-400 font-black text-[13px] uppercase tracking-widest italic">
+                           طوال الأسبوع
+                        </span>
+                        <div className="flex items-center gap-1 mt-1">
+                           <svg className="w-2.5 h-2.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                           <span className="text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em]">Open Days</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Operational Status Indicator */}
+                  <div className={`mt-2 px-4 py-1 rounded-full border text-[8px] font-black tracking-[0.2em] uppercase ${localIsOpen ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                     {localIsOpen ? 'Live Now' : 'Store Closed'}
+                  </div>
+               </div>
+            </div>
+         </header>
+
+      <div className="max-w-7xl mx-auto px-8 relative z-20">
+        {/* CATEGORY SELECTOR - Original Design with Anti-Glitch Fixes */}
+        <div className={`sticky top-0 z-[100] transition-all duration-500 -mx-8 px-8 py-4 ${scrolled ? 'bg-black/90 backdrop-blur-2xl border-b border-white/5 shadow-2xl' : 'bg-transparent'}`}>
+          <div className="max-w-4xl mx-auto">
+            <div className="flex gap-4 overflow-x-auto no-scrollbar px-2 pb-2">
+               <button 
+                onClick={() => setActiveCategoryId("all")} 
+                className={`whitespace-nowrap px-10 py-4 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-500 active:scale-90 ${activeCategoryId === "all" ? 'text-black shadow-[0_10px_30px_rgba(0,202,114,0.3)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}
+                style={activeCategoryId === "all" ? { backgroundColor: primary } : {}}
+                dir="rtl"
+               >
+                  الكل
+               </button>
+               {sortedCategories.map((cat) => {
+                  const isSpecial = cat.name === "الجديد والقسم الخاص";
+                  return (
                     <button 
-                      onClick={() => addToCart(product)}
-                      className="w-full py-2.5 rounded-xl font-medium transition-opacity hover:opacity-90 flex items-center justify-center gap-2"
-                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-secondary)' }}
+                      key={cat.id} 
+                      onClick={() => setActiveCategoryId(cat.id)} 
+                      className={`relative whitespace-nowrap px-10 py-4 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-500 active:scale-90 ${
+                        activeCategoryId === cat.id 
+                          ? isSpecial 
+                            ? 'bg-gradient-to-r from-green-500 via-yellow-500 to-green-500 text-black shadow-[0_15px_40px_rgba(0,202,114,0.4)] scale-110 border-none'
+                            : 'text-black shadow-[0_10px_30px_rgba(0,202,114,0.3)]' 
+                          : isSpecial
+                            ? 'bg-green-500/10 text-green-500 border border-green-500/20 shadow-[0_5px_15px_rgba(0,202,114,0.1)]'
+                            : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'
+                      }`}
+                      style={activeCategoryId === cat.id && !isSpecial ? { backgroundColor: primary } : {}}
+                      dir="rtl"
                     >
-                      إضافة للسلة
+                      {isSpecial && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-[7px] px-2 py-0.5 rounded-full font-black animate-bounce shadow-xl" style={{ color: primary }}>NEW</span>}
+                      {cat.name}
                     </button>
-                  )}
-                </div>
-              </div>
+                  );
+               })}
             </div>
-          ))}
-        </div>
-      </main>
-
-      {/* Floating Cart Widget */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-50 pointer-events-none">
-          <div className="max-w-4xl mx-auto flex justify-center">
-            <button 
-              onClick={sendOrder}
-              className="pointer-events-auto flex items-center justify-between gap-6 px-6 py-4 rounded-2xl shadow-xl w-full sm:w-auto min-w-[300px] transition-transform hover:scale-105 active:scale-95"
-              style={{ backgroundColor: '#25D366', color: '#fff' }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">
-                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                </div>
-                <span className="font-bold text-lg">إرسال الطلب</span>
-              </div>
-              <span className="font-bold text-lg">{total.toLocaleString()} د.ع</span>
-            </button>
           </div>
         </div>
+
+        <div className="mt-16 md:mt-32 mb-10 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-6 md:pb-10">
+           <div>
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] mb-2 md:mb-4 block" style={{ color: primary }}>قائمة الطعام</span>
+              <h2 className="text-3xl md:text-7xl font-black text-white italic tracking-tighter">{activeCategoryName}</h2>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-12 pb-60">
+          {displayedProducts.map((product, idx) => (
+            <ProductCard 
+              key={product.id}
+              product={product}
+              idx={idx}
+              primary={primary}
+              isSpecialCategory={product.category_id === specialCategoryId}
+              localIsOpen={localIsOpen}
+              getQuantity={getQuantity}
+              addToCart={addToCart}
+              removeFromCart={removeFromCart}
+              parsePizzaSizes={parsePizzaSizes}
+              selectedSize={selectedSizes[product.id]}
+              setSelectedSize={(size: { name: string; price: number }) => setSelectedSizes(prev => ({ ...prev, [product.id]: size }))}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* PREMIUM STANDARDIZED FOOTER */}
+      <footer className="relative z-20 mt-40 pb-24 px-8 border-t border-white/5 pt-24 bg-gradient-to-b from-transparent to-black">
+         <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col items-center gap-16 text-center">
+               
+               {/* Branding & Socials */}
+               <div className="space-y-10 flex flex-col items-center w-full">
+                  <div className="flex flex-col items-center gap-4">
+                     <div className="w-20 h-20 rounded-3xl overflow-hidden border border-white/10 mb-2 shadow-2xl skew-y-3 relative">
+                        <Image src={restaurant.logo_url || '/final.jpeg'} alt="Logo" fill sizes="80px" className="object-cover" />
+                     </div>
+                      <h3 className="text-4xl font-black italic tracking-tighter leading-none uppercase flex flex-col items-center gap-1">
+                         <span style={{ color: primary }}>{restaurant.name.split(' ')[0]}</span>
+                         <span className="text-yellow-500 text-2xl -mt-1">{restaurant.name.split(' ').slice(1).join(' ')}</span>
+                      </h3>
+                      <div className="flex flex-col items-center gap-1">
+                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] max-w-xs leading-relaxed text-center italic">أفخر النكهات الأصيلة والوصفات الأسطورية</p>
+                      </div>
+                  </div>
+               </div>
+
+            {/* COPYRIGHT BAR */}
+            <div className="mt-32 pt-10 border-t border-white/5 flex flex-col items-center justify-center gap-10">
+               <div className="flex flex-col items-center gap-2">
+                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">© {new Date().getFullYear()} {restaurant.name} • ALL RIGHTS RESERVED</p>
+               </div>
+            </div>
+         </div>
+         </div>
+      </footer>
+
+      {totalItems > 0 && localIsOpen && (
+         <div className="fixed bottom-4 left-0 w-full z-[100] px-3 pointer-events-none animate-slide-up">
+            <div className="max-w-lg mx-auto pointer-events-auto flex gap-2">
+               {/* Edit cart button */}
+               <button
+                 onClick={() => setIsCartOpen(true)}
+                 className="flex-shrink-0 glass bg-white/10 border border-white/20 rounded-2xl px-4 flex items-center justify-center gap-2 active:scale-90 transition-all"
+               >
+                 <div className="bg-yellow-500/90 w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs text-white">{totalItems}</div>
+                 <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                 </svg>
+               </button>
+               {/* Checkout button */}
+               <button onClick={() => setIsCheckoutOpen(true)} className="relative flex-1 group">
+                  <div className="relative glass text-white rounded-2xl py-3.5 px-5 flex items-center justify-between shadow-2xl active:scale-95 border border-white/20" style={{ backgroundColor: primary }}>
+                     <span className="text-base font-black">{totalPrice.toLocaleString("ar-IQ")} د.ع</span>
+                     <span className="font-black text-sm italic uppercase">إتمام الطلب</span>
+                  </div>
+               </button>
+            </div>
+         </div>
       )}
-    </>
-  )
+
+      {/* Cart Drawer */}
+      {isCartOpen ? (
+        <CartDrawer
+          cart={cart}
+          primary={primary}
+          totalPrice={totalPrice}
+          totalItems={totalItems}
+          onClose={() => setIsCartOpen(false)}
+          onCheckout={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
+          onAdd={addToCart}
+          onRemove={removeFromCart}
+        />
+      ) : null}
+
+      {isCheckoutOpen ? (
+        <CheckoutModal 
+          restaurant={restaurant}
+          cart={cart}
+          totalPrice={totalPrice}
+          onClose={() => setIsCheckoutOpen(false)} 
+          onSuccess={() => { setCart([]); setIsCheckoutOpen(false); }}
+        />
+      ) : null}
+      {/* FLOATING BOT/SERVICE ICON */}
+      <div className="fixed bottom-32 left-6 z-[90] animate-bounce-slow">
+        <a 
+          href={`https://wa.me/${restaurant?.whatsapp_number?.replace(/\+/g, '').replace(/ /g, '') || "9647719933131"}`}
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="relative block group"
+        >
+          <div className="absolute -inset-2 bg-yellow-400 rounded-full blur opacity-20 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+          <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full glass border border-white/20 bg-yellow-400 shadow-2xl overflow-hidden active:scale-90 transition-all">
+            <Image 
+              src="/final.jpeg" 
+              alt="Bot Service" 
+              fill 
+              sizes="64px"
+              className="object-cover hover:scale-125 transition-transform" 
+            />
+          </div>
+          <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 glass px-4 py-2 rounded-xl border border-white/10 whitespace-nowrap text-[10px] font-black text-white pointer-events-none opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+             هل تحتاج مساعدة؟ 👋
+          </div>
+        </a>
+      </div>
+    </div>
+  );
 }
+
+const ProductCard = React.memo(({ 
+  product, 
+  idx, 
+  primary,
+  isSpecialCategory,
+  localIsOpen, 
+  getQuantity, 
+  addToCart, 
+  removeFromCart, 
+  parsePizzaSizes, 
+  selectedSize, 
+  setSelectedSize 
+}: any) => {
+  const currentPrice = selectedSize?.price || product.price;
+  const sizes = parsePizzaSizes(product.description);
+  const activeSize = selectedSize?.name || "وسط";
+  const qty = getQuantity(product.id, sizes ? activeSize : undefined);
+
+  return (
+    <div 
+      className="group relative animate-slide-up" 
+      style={{ 
+        animationDelay: `${idx * 60}ms`,
+        contentVisibility: 'auto',
+        containIntrinsicSize: '400px'
+      }}
+    >
+       <div className={`glass bg-white/[0.01] rounded-[1.5rem] md:rounded-[4rem] p-3 md:p-8 border transition-all duration-700 relative overflow-hidden flex flex-col h-full 
+          ${(!localIsOpen || product.is_available === false) && 'grayscale opacity-60 pointer-events-none'} 
+          ${isSpecialCategory 
+            ? 'bg-gradient-to-br from-green-500/[0.08] via-transparent to-yellow-500/[0.05] shadow-[0_0_50px_rgba(0,202,114,0.15)] ring-1 ring-green-500/20' 
+            : 'border-white/10 hover:bg-white/[0.04]'
+          }`}
+          style={isSpecialCategory ? { borderColor: `${primary}80` } : {}}
+       >
+          {/* Shimmer Effect for Special Items */}
+          {isSpecialCategory && (
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent -translate-x-[100%] animate-shimmer pointer-events-none"></div>
+          )}
+          
+          {isSpecialCategory && (
+            <div className="absolute top-6 right-6 z-50 flex flex-col items-end gap-2 scale-110">
+               <div className="bg-gradient-to-r from-green-500 via-yellow-500 to-green-500 text-black text-[9px] md:text-[11px] font-black px-5 py-2 rounded-full shadow-[0_10px_30px_rgba(0,202,114,0.4)] flex items-center gap-2 border border-white/20 animate-pulse-slow">
+                  <span className="text-sm">🔥</span>
+                  قسم العروض الجديدة
+               </div>
+            </div>
+          )}
+
+          {product.is_available === false && (
+             <div className="absolute top-4 left-[-35px] bg-red-600 text-white text-[8px] md:text-[10px] font-black px-10 py-1 rotate-[-45deg] z-50 shadow-xl uppercase tracking-tighter">نفدت الكمية</div>
+          )}
+          
+          <div className={`w-full h-40 md:h-72 mb-4 md:mb-10 rounded-[1.2rem] md:rounded-[3rem] overflow-hidden relative shadow-2xl bg-[#0f0f10] border transition-all duration-700 
+            ${isSpecialCategory ? 'scale-[1.02] shadow-[0_0_40px_rgba(239,68,68,0.2)]' : 'border-white/5'}
+          `}
+          style={isSpecialCategory ? { borderColor: `${primary}80` } : {}}
+          >
+             {isSpecialCategory && (
+                <div className="absolute inset-0 bg-gradient-to-t from-green-500/20 via-transparent to-transparent z-10 pointer-events-none"></div>
+             )}
+             {product.image_url ? (
+                <Image 
+                   src={product.image_url} 
+                   alt={product.title} 
+                   fill 
+                   priority={idx < 6}
+                   sizes="(max-width: 768px) 50vw, 33vw"
+                   className="object-cover group-hover:scale-125 transition-transform duration-[3000ms]" 
+                   onError={(e: any) => {
+                     e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=60";
+                   }}
+                />
+             ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl md:text-7xl opacity-10">🍜</div>
+             )}
+             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60"></div>
+             <div className={`absolute bottom-4 right-4 md:bottom-6 md:right-6 px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl border shadow-2xl transition-all z-20 backdrop-blur-md
+                ${isSpecialCategory 
+                  ? 'text-white border-white/20 scale-110 shadow-[0_0_20px_rgba(0,202,114,0.4)]' 
+                  : 'bg-black/80 text-white border-yellow-500/50 shadow-[0_0_15px_rgba(255,204,0,0.1)]'}
+             `}
+             style={isSpecialCategory ? { backgroundColor: primary } : {}}
+             >
+                <span className="text-base md:text-2xl font-black italic tracking-tighter flex items-center gap-1 text-white">
+                   {currentPrice.toLocaleString("ar-IQ")}
+                   <span className={`text-[8px] md:text-[10px] font-bold uppercase not-italic
+                      ${isSpecialCategory ? 'text-white/70' : 'text-yellow-500'}
+                   `}>د.ع</span>
+                </span>
+             </div>
+          </div>
+
+          <div className="flex-grow">
+             <div className="flex items-center gap-2 mb-2 md:mb-4">
+                <h3 className={`text-xl md:text-3xl font-black transition-all tracking-tight ${isSpecialCategory ? 'text-yellow-500 drop-shadow-[0_0_10px_rgba(255,95,0,0.3)]' : 'text-white'}`}>
+                   {product.title}
+                </h3>
+                {isSpecialCategory && <span className="text-xl animate-bounce">⭐</span>}
+             </div>
+             {product.description && (
+                <p className="text-[11px] md:text-[13px] text-gray-500 font-bold leading-relaxed line-clamp-2 opacity-70">
+                   {product.description.includes("SIZES:") ? product.description.split("SIZES:")[0] : product.description}
+                </p>
+             )}
+          </div>
+
+          <div className="mt-4 md:mt-10 pt-4 md:pt-8 border-t border-white/5">
+              {localIsOpen ? (
+                 <>
+                    {sizes ? (
+                       <div className="space-y-4">
+                          <div className="grid grid-cols-3 gap-2">
+                             {sizes.map((size: any) => (
+                                <button 
+                                  key={size.name}
+                                  onClick={() => setSelectedSize(size)}
+                                  className={`py-2 px-1 rounded-xl text-[9px] font-black border transition-all ${
+                                    activeSize === size.name 
+                                      ? 'bg-yellow-500 text-white border-yellow-500 scale-105' 
+                                      : 'bg-white/5 text-gray-500 border-white/10'
+                                  }`}
+                                >
+                                   {size.name}
+                                </button>
+                             ))}
+                          </div>
+                          
+                          {qty > 0 ? (
+                             <div className="flex items-center w-full justify-between bg-white/5 rounded-xl md:rounded-3xl p-1 md:p-1.5 border border-white/10">
+                                <button onClick={() => removeFromCart(product.id, activeSize)} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-white text-lg md:text-2xl font-bold active:bg-white/10 rounded-lg">-</button>
+                                <span className="text-xs md:text-lg font-black text-white">{qty}</span>
+                                <button onClick={() => addToCart(product, selectedSize || sizes.find((s:any) => s.name === "وسط"))} className="w-10 h-10 md:w-12 md:h-12 text-white flex items-center justify-center font-bold rounded-lg md:rounded-2xl shadow-2xl active:scale-90" style={{ backgroundColor: primary }}>+</button>
+                             </div>
+                          ) : (
+                             <button onClick={() => addToCart(product, selectedSize || sizes.find((s:any) => s.name === "وسط"))} className="w-full bg-white/5 text-white py-4 md:py-5 rounded-xl md:rounded-3xl font-black text-[11px] md:text-xs tracking-widest transition-all active:scale-95 shadow-lg line-clamp-1" style={{ ':hover': { backgroundColor: primary } } as any}>
+                                إضافة {activeSize}
+                             </button>
+                          )}
+                       </div>
+                    ) : (
+                       <div className="flex items-center justify-between w-full">
+                          {product.is_available === false ? (
+                             <div className="w-full text-center py-4 bg-red-500/10 rounded-xl md:rounded-3xl border border-red-500/20 text-red-500 font-black text-[9px] md:text-[10px]">غير متوفر</div>
+                          ) : qty > 0 ? (
+                             <div className="flex items-center w-full justify-between bg-white/5 rounded-xl md:rounded-3xl p-1 md:p-1.5 border border-white/10">
+                                <button onClick={() => removeFromCart(product.id)} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-white text-lg md:text-2xl font-bold active:bg-white/10 rounded-lg">-</button>
+                                <span className="text-xs md:text-lg font-black text-white">{qty}</span>
+                                <button onClick={() => addToCart(product)} className="w-10 h-10 md:w-12 md:h-12 text-white flex items-center justify-center font-bold rounded-lg md:rounded-2xl shadow-2xl active:scale-90" style={{ backgroundColor: primary }}>+</button>
+                             </div>
+                          ) : (
+                             <button onClick={() => addToCart(product)} className="w-full bg-white/5 text-white py-4 md:py-5 rounded-xl md:rounded-3xl font-black text-[11px] md:text-xs tracking-widest transition-all active:scale-95 shadow-lg" style={{ ':hover': { backgroundColor: primary } } as any}>+ إضافة للطلب</button>
+                          )}
+                       </div>
+                    )}
+                 </>
+              ) : (
+                 <div className="w-full text-center text-red-500 font-black text-[11px] py-4 bg-red-500/10 rounded-xl border border-red-500/20 uppercase tracking-widest">مغلق</div>
+              )}
+           </div>
+       </div>
+    </div>
+  );
+});
+
+ProductCard.displayName = "ProductCard";
+
+// ─── Cart Drawer ────────────────────────────────────────────────────────────
+const CartDrawer = React.memo(({
+  cart,
+  primary,
+  totalPrice,
+  totalItems,
+  onClose,
+  onCheckout,
+  onAdd,
+  onRemove,
+}: {
+  cart: CartItem[];
+  primary: string;
+  totalPrice: number;
+  totalItems: number;
+  onClose: () => void;
+  onCheckout: () => void;
+  onAdd: (product: Product, size?: { name: string; price: number }) => void;
+  onRemove: (productId: string, sizeName?: string) => void;
+}) => {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end justify-center" dir="rtl">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <div 
+        className="relative w-full max-w-lg bg-[#0f0f10] border-t border-white/10 rounded-t-[2.5rem] shadow-2xl animate-slide-up flex flex-col max-h-[80vh]"
+        style={{ contentVisibility: 'auto' }}
+      >
+        {/* Handle bar */}
+        <div className="flex justify-center pt-4 pb-2">
+          <div className="w-12 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="border rounded-xl px-3 py-1 text-xs font-black" style={{ backgroundColor: `${primary}20`, borderColor: `${primary}30`, color: primary }}>
+              {totalItems} وجبة
+            </div>
+            <h3 className="text-base font-black text-white">طلبك</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white active:scale-90 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Items list */}
+        <div className="overflow-y-auto flex-1 px-4 py-3 space-y-3">
+          {cart.map((item, i) => {
+            const price = item.selectedPrice ?? item.product.price;
+            const lineTotal = price * item.quantity;
+            return (
+              <div
+                key={`${item.product.id}-${item.selectedSize ?? "nosize"}-${i}`}
+                className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl p-3"
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '60px' }}
+              >
+                {/* Product name & size */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-white truncate">{item.product.title}</p>
+                  {item.selectedSize && (
+                    <span className="text-[10px] font-bold text-yellow-500/80">
+                      {item.selectedSize}
+                    </span>
+                  )}
+                  <p className="text-xs font-bold text-gray-500 mt-0.5">
+                    {lineTotal.toLocaleString("ar-IQ")} د.ع
+                  </p>
+                </div>
+
+                {/* Quantity controls */}
+                <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
+                  <button
+                    onClick={() => onRemove(item.product.id, item.selectedSize)}
+                    className="w-8 h-8 flex items-center justify-center text-white font-bold rounded-lg active:bg-white/10 transition-all text-lg"
+                  >
+                    {item.quantity === 1 ? (
+                      <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    ) : "−"}
+                  </button>
+                  <span className="w-6 text-center text-sm font-black text-white">{item.quantity}</span>
+                  <button
+                    onClick={() => onAdd(item.product, item.selectedSize ? { name: item.selectedSize, price: item.selectedPrice! } : undefined)}
+                    className="w-8 h-8 flex items-center justify-center text-white font-bold rounded-lg active:scale-90 transition-all text-lg shadow-lg"
+                    style={{ backgroundColor: primary, boxShadow: `0 10px 15px -3px ${primary}30` }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-4 border-t border-white/5 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-sm font-black text-white">المجموع</span>
+            <span className="text-lg font-black text-yellow-500">
+              {totalPrice.toLocaleString("ar-IQ")} <small className="text-xs opacity-60">د.ع</small>
+            </span>
+          </div>
+          <button
+            onClick={onCheckout}
+            className="w-full text-white py-4 rounded-2xl font-black text-sm tracking-wide active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+            style={{ backgroundColor: primary, boxShadow: `0 10px 15px -3px ${primary}30` }}
+          >
+            <span>إتمام الطلب</span>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+CartDrawer.displayName = "CartDrawer";
