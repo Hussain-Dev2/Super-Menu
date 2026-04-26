@@ -114,9 +114,35 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
 
       alert('تم حفظ الإعدادات بنجاح!')
     }
+  const [editingProduct, setEditingProduct] = useState<any>(null)
+  
+  const primaryColor = restaurant.theme_config?.primary_color || '#eab308'
+
+  const saveEditedProduct = async () => {
+    if (!editingProduct.title || !editingProduct.price) return
+    setIsUploading(true)
+    const { data } = await supabase.from('products').update({
+      title: editingProduct.title,
+      price: Number(editingProduct.price),
+      description: editingProduct.description,
+      category_id: editingProduct.category_id,
+      image_url: editingProduct.image_url
+    }).eq('id', editingProduct.id).select().single()
+
+    if (data) {
+      setProducts(products.map((p: any) => p.id === data.id ? data : p))
+      setEditingProduct(null)
+    }
+    setIsUploading(false)
   }
 
-  const primaryColor = restaurant.theme_config?.primary_color || '#eab308'
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    setIsUploading(true)
+    const url = await uploadRestaurantImage(e.target.files[0])
+    if (url) setEditingProduct({ ...editingProduct, image_url: url })
+    setIsUploading(false)
+  }
 
   return (
     <>
@@ -130,6 +156,34 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
         .theme-pulse { background-color: ${primaryColor}15 !important; }
       `}} />
 
+      {/* Edit Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+          <div className="bg-[#111] border border-white/10 p-6 md:p-8 rounded-[2rem] w-full max-w-xl shadow-2xl relative animate-slide-up">
+            <h2 className="text-xl font-black mb-6 flex items-center gap-3 text-white">
+              <span className="w-2 h-2 rounded-full theme-bg"></span>
+              تعديل الصنف
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input type="text" placeholder="اسم الصنف" value={editingProduct.title} onChange={e => setEditingProduct({...editingProduct, title: e.target.value})} className="bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium" />
+              <input type="number" placeholder="السعر" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} className="bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium text-left" dir="ltr" />
+              <textarea placeholder="وصف الصنف..." value={editingProduct.description} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} className="bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium md:col-span-2 min-h-[100px]" />
+              <select value={editingProduct.category_id} onChange={e => setEditingProduct({...editingProduct, category_id: e.target.value})} className="bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 theme-ring transition-all text-sm font-medium">
+                {categories.map((c: any) => <option key={c.id} value={c.id} className="bg-[#050505]">{c.name}</option>)}
+              </select>
+              <div className="flex items-center gap-4 bg-black border border-white/10 rounded-xl px-4 py-3">
+                <input type="file" accept="image/*" onChange={handleEditImageUpload} className="text-[10px] text-gray-400 file:ml-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-white/10 file:text-white transition-all cursor-pointer w-full" />
+                {isUploading && <span className="text-[10px] theme-text font-bold animate-pulse">جاري...</span>}
+              </div>
+            </div>
+            <div className="flex gap-4 mt-8">
+              <button onClick={saveEditedProduct} disabled={isUploading} className="flex-1 py-4 theme-bg text-black rounded-xl font-black text-sm disabled:opacity-30 transition-all hover:opacity-90">حفظ التغييرات</button>
+              <button onClick={() => setEditingProduct(null)} className="flex-1 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-black text-sm hover:bg-white/10 transition-all">إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div dir="rtl" className="min-h-screen bg-[#050505] text-white p-4 md:p-8 relative overflow-hidden font-sans">
         {/* Animated Background Elements */}
         <div className="fixed top-[-10%] right-[-10%] w-[40%] h-[40%] theme-pulse rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
@@ -140,11 +194,11 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] shadow-3xl">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)] bg-black/40 relative group">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)] bg-black/40 relative group shrink-0">
                 {restaurant.logo_url ? (
                   <Image src={restaurant.logo_url} alt="شعار المطعم" fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">لا يوجد شعار</div>
+                  <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-500 text-center px-1">لا يوجد شعار</div>
                 )}
               </div>
               <div>
@@ -205,7 +259,7 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
                     {categories.map((c: any) => <option key={c.id} value={c.id} className="bg-[#050505]">{c.name}</option>)}
                   </select>
                   <div className="flex items-center gap-4 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
-                    <input type="file" accept="image/*" onChange={handleProductUpload} className="text-xs text-gray-400 file:ml-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
+                    <input type="file" accept="image/*" onChange={handleProductUpload} className="text-[10px] text-gray-400 file:ml-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
                     {isUploading && <span className="text-[10px] theme-text font-bold animate-pulse">جاري الرفع...</span>}
                   </div>
                 </div>
@@ -240,11 +294,14 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
                       <h3 className="font-bold text-xl mb-2 line-clamp-1">{product.title}</h3>
                       <p className="text-xs text-gray-400 mb-6 line-clamp-2 h-8">{product.description}</p>
                       
-                      <div className="flex gap-2">
-                        <button onClick={() => toggleAvailability(product)} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${product.is_available ? 'bg-white/10 text-white hover:bg-white/20' : 'theme-pulse theme-text theme-border hover:opacity-80 border'}`}>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button onClick={() => toggleAvailability(product)} className={`py-3 text-[10px] font-black rounded-xl transition-all ${product.is_available ? 'bg-white/10 text-white hover:bg-white/20' : 'theme-pulse theme-text theme-border hover:opacity-80 border'}`}>
                           {product.is_available ? 'إخفاء' : 'إظهار'}
                         </button>
-                        <button onClick={() => deleteProduct(product.id)} className="px-4 py-3 bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                        <button onClick={() => setEditingProduct(product)} className="py-3 bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-black rounded-xl hover:bg-blue-500 hover:text-white transition-all">
+                          تعديل
+                        </button>
+                        <button onClick={() => deleteProduct(product.id)} className="py-3 bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black rounded-xl hover:bg-red-500 hover:text-white transition-all">
                           حذف
                         </button>
                       </div>
@@ -333,17 +390,17 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
                 
                 <div className="bg-black/20 p-6 rounded-[1.5rem] border border-white/5">
                   <label className="block text-xs font-black text-gray-500 mb-3">شعار العلامة التجارية</label>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-white/10 bg-black shadow-xl shrink-0">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-black/40 border border-white/10 rounded-xl p-4">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-white/20 bg-black shadow-xl shrink-0 flex items-center justify-center">
                       {restaurant.logo_url ? (
                         <Image src={restaurant.logo_url} alt="Logo" fill className="object-cover" />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-white/20 text-[10px] font-black text-center px-2">لا يوجد شعار</div>
+                        <span className="text-white/20 text-[10px] font-black text-center px-1">بدون شعار</span>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="block w-full text-sm text-gray-400 file:ml-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
-                      {isUploadingLogo && <p className="text-[10px] theme-text font-bold animate-pulse mt-3">جاري الرفع للتخزين الآمن...</p>}
+                    <div className="flex-1 w-full">
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="block w-full text-xs text-gray-400 file:mr-0 file:ml-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
+                      {isUploadingLogo && <p className="text-[10px] theme-text font-bold animate-pulse mt-2">جاري الرفع...</p>}
                     </div>
                   </div>
                 </div>
