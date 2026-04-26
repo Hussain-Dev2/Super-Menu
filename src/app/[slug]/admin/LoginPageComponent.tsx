@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+export default function LoginPageComponent({ slug, defaultEmail, defaultPassword }: { slug?: string, defaultEmail?: string, defaultPassword?: string }) {
+  const [email, setEmail] = useState(defaultEmail || '')
+  const [password, setPassword] = useState(defaultPassword || '')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -53,7 +53,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-4xl font-black text-white tracking-tighter italic uppercase text-center">
             <span className="text-yellow-500">Super</span> Menu
-            <span className="block text-[10px] tracking-[0.5em] text-gray-500 mt-2 not-italic font-bold opacity-50">Administration Portal</span>
+            <span className="block text-[10px] tracking-[0.5em] text-gray-500 mt-2 not-italic font-bold opacity-50">{slug ? slug.replace(/-/g, ' ') : 'Administration Portal'}</span>
           </h1>
         </div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold px-4 py-3 rounded-xl">
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold px-4 py-3 rounded-xl animate-shake">
                 {error}
               </div>
             )}
