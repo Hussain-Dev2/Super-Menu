@@ -506,7 +506,8 @@ const ProductCard = React.memo(({
                    sizes="(max-width: 768px) 50vw, 33vw"
                    className="object-cover group-hover:scale-125 transition-transform duration-[3000ms]" 
                    onError={(e: any) => {
-                     e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=60";
+                     e.currentTarget.src = "/final.jpeg";
+                     e.currentTarget.srcset = "";
                    }}
                 />
              ) : (
