@@ -114,6 +114,8 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
 
       alert('تم حفظ الإعدادات بنجاح!')
     }
+  }
+
   const [editingProduct, setEditingProduct] = useState<any>(null)
   
   const primaryColor = restaurant.theme_config?.primary_color || '#eab308'
