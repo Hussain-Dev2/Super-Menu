@@ -111,163 +111,252 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
     
     if (data) {
       setRestaurant(data)
-      alert('Settings saved successfully!')
+
+      alert('تم حفظ الإعدادات بنجاح!')
     }
   }
 
+  const primaryColor = restaurant.theme_config?.primary_color || '#eab308'
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{restaurant.name} - Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">Logged in as {user.email}</p>
-        </div>
-        <button 
-          onClick={() => supabase.auth.signOut().then(() => window.location.href = '/login')}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
-        >
-          Sign Out
-        </button>
-      </div>
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        .theme-bg { background-color: ${primaryColor} !important; }
+        .theme-text { color: ${primaryColor} !important; }
+        .theme-border { border-color: ${primaryColor} !important; }
+        .theme-ring:focus { --tw-ring-color: ${primaryColor}80 !important; }
+        .theme-glow { box-shadow: 0 10px 30px ${primaryColor}40 !important; }
+        .theme-glow-hover:hover { box-shadow: 0 15px 40px ${primaryColor}60 !important; }
+        .theme-pulse { background-color: ${primaryColor}15 !important; }
+      `}} />
 
-      <div className="flex space-x-4 mb-8 border-b border-gray-200">
-        <button 
-          className={`pb-4 px-2 font-medium text-sm transition-colors ${activeTab === 'products' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setActiveTab('products')}
-        >
-          Manage Products
-        </button>
-        <button 
-          className={`pb-4 px-2 font-medium text-sm transition-colors ${activeTab === 'categories' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setActiveTab('categories')}
-        >
-          Manage Categories
-        </button>
-        <button 
-          className={`pb-4 px-2 font-medium text-sm transition-colors ${activeTab === 'settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setActiveTab('settings')}
-        >
-          Restaurant Settings
-        </button>
-      </div>
+      <div dir="rtl" className="min-h-screen bg-[#050505] text-white p-4 md:p-8 relative overflow-hidden font-sans">
+        {/* Animated Background Elements */}
+        <div className="fixed top-[-10%] right-[-10%] w-[40%] h-[40%] theme-pulse rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
+        <div className="fixed bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-green-500/10 rounded-full blur-[120px] animate-pulse-slow pointer-events-none"></div>
 
-      {activeTab === 'products' && (
-        <div className="space-y-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold mb-4">Add New Product</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Title" value={newProduct.title} onChange={e => setNewProduct({...newProduct, title: e.target.value})} className="border p-2 rounded" />
-              <input type="number" placeholder="Price (IQD)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="border p-2 rounded" />
-              <textarea placeholder="Description" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="border p-2 rounded md:col-span-2" />
-              <select value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} className="border p-2 rounded">
-                <option value="" disabled>Select Category</option>
-                {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <div className="flex items-center gap-4">
-                <input type="file" accept="image/*" onChange={handleProductUpload} className="text-sm" />
-                {isUploading && <span className="text-sm text-blue-600">Uploading...</span>}
+        <div className="max-w-6xl mx-auto relative z-10 animate-fade-in">
+          
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] shadow-3xl">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)] bg-black/40 relative group">
+                {restaurant.logo_url ? (
+                  <Image src={restaurant.logo_url} alt="شعار المطعم" fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">لا يوجد شعار</div>
+                )}
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-white tracking-tighter">
+                  بوابة <span className="theme-text">{restaurant.name}</span>
+                </h1>
+                <p className="text-gray-500 text-xs mt-1 font-bold">حساب المسؤول: {user.email}</p>
               </div>
             </div>
-            <button onClick={addProduct} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50" disabled={isUploading || !newProduct.title || !newProduct.price || !newProduct.category_id}>
-              Add Product
+            <button 
+              onClick={() => supabase.auth.signOut().then(() => window.location.href = '/login')}
+              className="mt-6 md:mt-0 px-6 py-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs font-black hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(239,68,68,0.1)] hover:shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+            >
+              تسجيل الخروج
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {products.map((product: any) => (
-              <div key={product.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${!product.is_available && 'opacity-60'}`}>
-                {product.image_url && <div className="h-40 relative"><Image src={product.image_url} alt="" fill className="object-cover" /></div>}
-                <div className="p-4">
-                  <h3 className="font-bold">{product.title}</h3>
-                  <p className="text-blue-600 font-medium">{product.price} د.ع</p>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product.description}</p>
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={() => toggleAvailability(product)} className="flex-1 px-3 py-1.5 bg-gray-100 text-sm font-medium rounded hover:bg-gray-200">
-                      {product.is_available ? 'Set Unavailable' : 'Set Available'}
-                    </button>
-                    <button onClick={() => deleteProduct(product.id)} className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded hover:bg-red-100">
-                      Delete
-                    </button>
+          {/* Tabs */}
+          <div className="flex space-x-2 md:space-x-4 space-x-reverse mb-8 overflow-x-auto pb-4 scrollbar-hide">
+            <button 
+              className={`whitespace-nowrap px-6 py-4 rounded-2xl font-black text-sm transition-all ${activeTab === 'products' ? 'theme-bg text-black theme-glow' : 'bg-white/[0.03] border border-white/10 text-gray-400 hover:text-white hover:bg-white/[0.08]'}`}
+              onClick={() => setActiveTab('products')}
+            >
+              عناصر القائمة
+            </button>
+            <button 
+              className={`whitespace-nowrap px-6 py-4 rounded-2xl font-black text-sm transition-all ${activeTab === 'categories' ? 'theme-bg text-black theme-glow' : 'bg-white/[0.03] border border-white/10 text-gray-400 hover:text-white hover:bg-white/[0.08]'}`}
+              onClick={() => setActiveTab('categories')}
+            >
+              الأقسام
+            </button>
+            <button 
+              className={`whitespace-nowrap px-6 py-4 rounded-2xl font-black text-sm transition-all ${activeTab === 'settings' ? 'theme-bg text-black theme-glow' : 'bg-white/[0.03] border border-white/10 text-gray-400 hover:text-white hover:bg-white/[0.08]'}`}
+              onClick={() => setActiveTab('settings')}
+            >
+              إعدادات النظام
+            </button>
+          </div>
+
+          {/* --- PRODUCTS TAB --- */}
+          {activeTab === 'products' && (
+            <div className="space-y-8 animate-slide-up">
+              {/* Add Product Card */}
+              <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] shadow-3xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-32 h-32 theme-pulse rounded-br-[100px]"></div>
+                
+                <h2 className="text-xl font-black mb-6 flex items-center gap-3">
+                  <span className="w-2 h-2 rounded-full theme-bg"></span>
+                  إضافة صنف جديد
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input type="text" placeholder="اسم الصنف" value={newProduct.title} onChange={e => setNewProduct({...newProduct, title: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium" />
+                  <input type="number" placeholder="السعر (دينار عراقي)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium text-left" dir="ltr" />
+                  <textarea placeholder="وصف الصنف..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium md:col-span-2 min-h-[100px]" />
+                  <select value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 theme-ring transition-all text-sm font-medium">
+                    <option value="" disabled>اختر القسم</option>
+                    {categories.map((c: any) => <option key={c.id} value={c.id} className="bg-[#050505]">{c.name}</option>)}
+                  </select>
+                  <div className="flex items-center gap-4 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
+                    <input type="file" accept="image/*" onChange={handleProductUpload} className="text-xs text-gray-400 file:ml-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
+                    {isUploading && <span className="text-[10px] theme-text font-bold animate-pulse">جاري الرفع...</span>}
                   </div>
                 </div>
+                <button 
+                  onClick={addProduct} 
+                  disabled={isUploading || !newProduct.title || !newProduct.price || !newProduct.category_id}
+                  className="mt-6 px-8 py-4 theme-bg text-black rounded-xl font-black text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all theme-glow theme-glow-hover active:scale-95 hover:opacity-90"
+                >
+                  نشر في القائمة
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {activeTab === 'categories' && (
-        <div className="space-y-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-             <h2 className="text-lg font-bold mb-4">Add New Category</h2>
-             <div className="flex gap-4">
-                <input type="text" placeholder="Category Name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className="border p-2 rounded flex-1" />
-                <button onClick={addCategory} disabled={!newCategoryName} className="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50">Add</button>
-             </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y">
-            {categories.map((cat: any) => (
-              <div key={cat.id} className="p-4 flex justify-between items-center">
-                <span className="font-medium text-gray-900">{cat.name}</span>
-                <button onClick={() => deleteCategory(cat.id)} className="text-red-600 hover:underline text-sm font-medium">Delete</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'settings' && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-          <h2 className="text-lg font-bold">Restaurant Settings</h2>
-          
-          <div className="space-y-4 max-w-lg">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Restaurant Name</label>
-              <input type="text" value={settings.name} onChange={e => setSettings({...settings, name: e.target.value})} className="w-full border p-2 rounded" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-              <input type="text" placeholder="e.g. +9647701234567" value={settings.whatsapp_number} onChange={e => setSettings({...settings, whatsapp_number: e.target.value})} className="w-full border p-2 rounded" />
-              <p className="text-xs text-gray-500 mt-1">Include country code, no spaces or dashes.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
-              <div className="flex gap-2 items-center">
-                <input type="color" value={settings.primary_color} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="h-10 w-10 cursor-pointer" />
-                <input type="text" value={settings.primary_color} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="border p-2 rounded flex-1" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Color (Text)</label>
-              <div className="flex gap-2 items-center">
-                <input type="color" value={settings.secondary_color} onChange={e => setSettings({...settings, secondary_color: e.target.value})} className="h-10 w-10 cursor-pointer" />
-                <input type="text" value={settings.secondary_color} onChange={e => setSettings({...settings, secondary_color: e.target.value})} className="border p-2 rounded flex-1" />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Restaurant Logo</label>
-              <div className="flex items-center gap-4">
-                {restaurant.logo_url && (
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border">
-                    <Image src={restaurant.logo_url} alt="Logo" fill className="object-cover" />
+              {/* Products Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {products.map((product: any) => (
+                  <div key={product.id} className={`bg-white/[0.02] backdrop-blur-xl rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl group transition-all duration-500 hover:-translate-y-2 hover:border-white/30 ${!product.is_available && 'opacity-50 grayscale'}`}>
+                    {product.image_url ? (
+                      <div className="h-48 relative overflow-hidden">
+                        <Image src={product.image_url} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-white/5 flex items-center justify-center border-b border-white/5">
+                         <span className="text-white/20 text-xs font-black">لا توجد صورة</span>
+                      </div>
+                    )}
+                    
+                    <div className="p-6 relative">
+                      <div className="absolute top-[-20px] left-6 bg-black border border-white/10 theme-text font-black px-4 py-2 rounded-xl text-sm shadow-xl" dir="ltr">
+                        {product.price.toLocaleString()} د.ع
+                      </div>
+                      <h3 className="font-bold text-xl mb-2 line-clamp-1">{product.title}</h3>
+                      <p className="text-xs text-gray-400 mb-6 line-clamp-2 h-8">{product.description}</p>
+                      
+                      <div className="flex gap-2">
+                        <button onClick={() => toggleAvailability(product)} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${product.is_available ? 'bg-white/10 text-white hover:bg-white/20' : 'theme-pulse theme-text theme-border hover:opacity-80 border'}`}>
+                          {product.is_available ? 'إخفاء' : 'إظهار'}
+                        </button>
+                        <button onClick={() => deleteProduct(product.id)} className="px-4 py-3 bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                          حذف
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <input type="file" accept="image/*" onChange={handleLogoUpload} className="text-sm" />
-                {isUploadingLogo && <span className="text-sm text-blue-600">Uploading...</span>}
+                ))}
               </div>
             </div>
+          )}
 
-            <button onClick={saveSettings} className="w-full py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
-              Save Settings
-            </button>
-          </div>
+          {/* --- CATEGORIES TAB --- */}
+          {activeTab === 'categories' && (
+            <div className="space-y-8 animate-slide-up max-w-3xl">
+              <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] shadow-3xl">
+                 <h2 className="text-xl font-black mb-6 flex items-center gap-3">
+                   <span className="w-2 h-2 rounded-full theme-bg"></span>
+                   إضافة قسم جديد
+                 </h2>
+                 <div className="flex flex-col sm:flex-row gap-4">
+                    <input type="text" placeholder="مثال: الأطباق الرئيسية" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className="bg-black/40 border border-white/10 rounded-xl px-6 py-4 text-white placeholder:text-gray-600 focus:ring-2 theme-ring transition-all text-sm font-medium flex-1" />
+                    <button onClick={addCategory} disabled={!newCategoryName} className="px-8 py-4 theme-bg text-black rounded-xl font-black text-sm disabled:opacity-30 transition-all active:scale-95 hover:opacity-90">إضافة</button>
+                 </div>
+              </div>
+              
+              <div className="bg-white/[0.02] backdrop-blur-xl rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden divide-y divide-white/10">
+                {categories.map((cat: any) => (
+                  <div key={cat.id} className="p-6 flex justify-between items-center group hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full theme-pulse theme-text flex items-center justify-center text-xs font-black">{categories.indexOf(cat) + 1}</div>
+                      <span className="font-bold text-lg">{cat.name}</span>
+                    </div>
+                    <button onClick={() => deleteCategory(cat.id)} className="opacity-0 group-hover:opacity-100 px-4 py-2 bg-red-500/10 text-red-500 rounded-lg text-[10px] font-black hover:bg-red-500 hover:text-white transition-all">
+                      إزالة
+                    </button>
+                  </div>
+                ))}
+                {categories.length === 0 && (
+                  <div className="p-10 text-center text-gray-500 text-sm font-medium">لم يتم إنشاء أي أقسام بعد.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* --- SETTINGS TAB --- */}
+          {activeTab === 'settings' && (
+            <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-6 md:p-10 rounded-[2rem] shadow-3xl max-w-3xl animate-slide-up relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-br-[200px] pointer-events-none"></div>
+
+              <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-white animate-pulse"></span>
+                إعدادات المنصة
+              </h2>
+              
+              <div className="space-y-6 relative z-10">
+                <div className="bg-black/20 p-6 rounded-[1.5rem] border border-white/5">
+                  <label className="block text-xs font-black text-gray-500 mb-3">اسم المطعم</label>
+                  <input type="text" value={settings.name} onChange={e => setSettings({...settings, name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-white/20 transition-all font-bold text-lg" />
+                </div>
+
+                <div className="bg-black/20 p-6 rounded-[1.5rem] border border-white/5">
+                  <label className="block text-xs font-black text-gray-500 mb-3">رقم واتساب للطلبات</label>
+                  <input type="text" placeholder="+964..." value={settings.whatsapp_number} onChange={e => setSettings({...settings, whatsapp_number: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500/50 transition-all font-mono text-left" dir="ltr" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-black/20 p-6 rounded-[1.5rem] border border-white/5">
+                    <label className="block text-xs font-black text-gray-500 mb-3">اللون الأساسي للثيم</label>
+                    <div className="flex gap-4 items-center">
+                      <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 cursor-pointer shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                         <input type="color" value={settings.primary_color} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="absolute inset-[-50%] w-[200%] h-[200%] cursor-pointer" />
+                      </div>
+                      <input type="text" value={settings.primary_color} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-white/20 transition-all font-mono text-sm uppercase text-left" dir="ltr" />
+                    </div>
+                  </div>
+
+                  <div className="bg-black/20 p-6 rounded-[1.5rem] border border-white/5">
+                    <label className="block text-xs font-black text-gray-500 mb-3">لون النصوص الثانوي</label>
+                    <div className="flex gap-4 items-center">
+                      <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 cursor-pointer shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                         <input type="color" value={settings.secondary_color} onChange={e => setSettings({...settings, secondary_color: e.target.value})} className="absolute inset-[-50%] w-[200%] h-[200%] cursor-pointer" />
+                      </div>
+                      <input type="text" value={settings.secondary_color} onChange={e => setSettings({...settings, secondary_color: e.target.value})} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-white/20 transition-all font-mono text-sm uppercase text-left" dir="ltr" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-black/20 p-6 rounded-[1.5rem] border border-white/5">
+                  <label className="block text-xs font-black text-gray-500 mb-3">شعار العلامة التجارية</label>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                    <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-white/10 bg-black shadow-xl shrink-0">
+                      {restaurant.logo_url ? (
+                        <Image src={restaurant.logo_url} alt="Logo" fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-white/20 text-[10px] font-black text-center px-2">لا يوجد شعار</div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="block w-full text-sm text-gray-400 file:ml-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
+                      {isUploadingLogo && <p className="text-[10px] theme-text font-bold animate-pulse mt-3">جاري الرفع للتخزين الآمن...</p>}
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={saveSettings} className="w-full py-5 bg-white text-black rounded-2xl font-black text-sm hover:bg-gray-200 transition-all shadow-[0_10px_40px_rgba(255,255,255,0.2)] active:scale-95 mt-8">
+                  حفظ الإعدادات والتغييرات
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   )
 }
+
