@@ -46,8 +46,8 @@ export default function ClientMenu({ restaurant, categories: rawCategories, prod
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  // For now, in Super Menu we assume the store is always open or read from restaurant config
-  const [localIsOpen, setLocalIsOpen] = useState(true);
+  // Use the store status from the database config
+  const [localIsOpen, setLocalIsOpen] = useState(restaurant.is_open ?? true);
   const [selectedSizes, setSelectedSizes] = useState<Record<string, { name: string; price: number }>>({});
 
   const primary = restaurant.theme_config?.primary_color || '#00ca72';
