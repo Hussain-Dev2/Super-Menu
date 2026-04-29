@@ -229,7 +229,7 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
         </div>
       )}
 
-      <div dir="rtl" className="min-h-screen bg-[#050505] text-white p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8 relative overflow-hidden font-sans">
+      <div dir="rtl" className="min-h-screen bg-[#050505] text-white p-4 md:p-8 pb-8 md:pb-8 relative overflow-hidden font-sans">
         {/* Animated Background Elements */}
         <div className="fixed top-[-10%] right-[-10%] w-[40%] h-[40%] theme-pulse rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
         <div className="fixed bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-green-500/10 rounded-full blur-[120px] animate-pulse-slow pointer-events-none"></div>
@@ -272,29 +272,8 @@ export default function DashboardClient({ user, restaurant: initialRestaurant, i
             </div>
           </div>
 
-          {/* Mobile Bottom Navigation */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#050505]/80 backdrop-blur-xl border-t border-white/10 z-50 pb-[env(safe-area-inset-bottom)]">
-            <div className="flex justify-around items-center p-2">
-              {[
-                { id: 'stats', label: 'إحصائيات', icon: '📊' },
-                { id: 'products', label: 'أصناف', icon: '🍔' },
-                { id: 'categories', label: 'أقسام', icon: '📂' },
-                { id: 'settings', label: 'إعدادات', icon: '⚙️' }
-              ].map(tab => (
-                <button 
-                  key={tab.id}
-                  className={`flex flex-col items-center justify-center p-3 w-full rounded-2xl transition-all active:scale-95 ${activeTab === tab.id ? 'theme-text theme-pulse' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <span className="text-2xl mb-1">{tab.icon}</span>
-                  <span className="text-[10px] font-black">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Desktop Navigation Tabs */}
-          <div className="hidden md:flex space-x-2 md:space-x-4 space-x-reverse mb-8 overflow-x-auto pb-4 scrollbar-hide">
+          {/* Navigation Tabs */}
+          <div className="flex space-x-2 md:space-x-4 space-x-reverse mb-8 overflow-x-auto pb-4 scrollbar-hide">
             {[
               { id: 'stats', label: 'الإحصائيات 📊' },
               { id: 'products', label: 'الأصناف 🍔' },
