@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",
+      allowedOrigins: [
+        'landin-page-sm.nexadigital.dev',
+        '*.nexadigital.dev',
+        'nexadigital.dev'
+      ],
     },
   },
   images: {

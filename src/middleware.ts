@@ -19,6 +19,19 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Handle CORS Preflight (OPTIONS)
+  if (request.method === 'OPTIONS') {
+    const origin = request.headers.get('origin') ?? ''
+    if (origin.endsWith('.nexadigital.dev') || origin === 'https://nexadigital.dev') {
+      const preflightHeaders = new Headers()
+      preflightHeaders.set('Access-Control-Allow-Origin', origin)
+      preflightHeaders.set('Access-Control-Allow-Credentials', 'true')
+      preflightHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      preflightHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version')
+      return new NextResponse(null, { headers: preflightHeaders, status: 204 })
+    }
+  }
+
   // 2. Custom Domain White-Label Rewriting
   const url = request.nextUrl
   const hostname = request.headers.get('host') || ''
@@ -41,8 +54,24 @@ export async function middleware(request: NextRequest) {
         rewriteResponse.cookies.set(cookie.name, cookie.value, cookie)
       })
       
+      const origin = request.headers.get('origin') ?? ''
+      if (origin.endsWith('.nexadigital.dev') || origin === 'https://nexadigital.dev') {
+        rewriteResponse.headers.set('Access-Control-Allow-Origin', origin)
+        rewriteResponse.headers.set('Access-Control-Allow-Credentials', 'true')
+        rewriteResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        rewriteResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version')
+      }
+      
       return rewriteResponse
     }
+  }
+
+  const origin = request.headers.get('origin') ?? ''
+  if (origin.endsWith('.nexadigital.dev') || origin === 'https://nexadigital.dev') {
+    supabaseResponse.headers.set('Access-Control-Allow-Origin', origin)
+    supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true')
+    supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version')
   }
 
   return supabaseResponse
